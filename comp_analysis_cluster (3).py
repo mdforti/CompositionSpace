@@ -32,6 +32,19 @@ def label_ions(pos,rrngs):
 
 #
 def atom_filter(x, Atom_range):
+    """
+    Get a list of atom species and their counts
+    
+    Parameters
+    ----------
+    
+    Returns
+    -------
+    
+    Notes
+    -----
+    Assuming all the data
+    """
     Atom_total = pd.DataFrame()
     for i in range(len(Atom_range)):
         Atom = x[x['Da'].between(Atom_range['lower'][i], Atom_range['upper'][i], inclusive=True)]
@@ -41,6 +54,33 @@ def atom_filter(x, Atom_range):
 
 
 def readpos(file_name):
+    """
+    Read the pos file 
+    
+    Parameters
+    ----------
+    file_name: string
+        Name of the input file
+    
+    Returns
+    -------
+    pos: np structured array
+        The atom positions and ---- ratio
+    
+    Notes
+    -----
+    Assumptions
+    
+    Examples
+    --------
+    
+    Raises
+    ------
+    FileNotFoundError: describe
+    """
+    if not os.path.exists(file_name):
+        raise FileNotFoundError("filename does not exist")
+        
     f = open(file_name, 'rb') # reading in binary (SA).
     dt_type = np.dtype({'names':['x', 'y', 'z', 'm'], 
                   'formats':['>f4', '>f4', '>f4', '>f4']})
