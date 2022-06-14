@@ -90,6 +90,18 @@ def readpos(file_name):
 
 
 def read_apt_2_df(folder):
+    """
+    Read the data 
+    
+    Parameters
+    ----------
+    
+    Returns
+    -------
+    
+    Notes
+    -----
+    """
     print("Hi")
     df_Mass_POS_lst = []
     file_name_lst=[]
@@ -131,6 +143,18 @@ def read_apt_2_df(folder):
 #def read
 
 def read_rrng(f):
+    """
+    Read the data 
+    
+    Parameters
+    ----------
+    
+    Returns
+    -------
+    
+    Notes
+    -----
+    """
     rf = open(f,'r').readlines()
     patterns = re.compile(r'Ion([0-9]+)=([A-Za-z0-9]+).*|Range([0-9]+)=(\d+.\d+) +(\d+.\d+) +Vol:(\d+.\d+) +([A-Za-z:0-9 ]+) +Color:([A-Z0-9]{6})')
     ions = []
@@ -155,7 +179,18 @@ def read_rrng(f):
 
 
 def apt_df_2_big_chunks_arr(folder, NoSlices = 10):
-
+    """
+    Read the data 
+    
+    Parameters
+    ----------
+    
+    Returns
+    -------
+    
+    Notes
+    -----
+    """
     df_lst, files,ions,rrngs= read_apt_2_df(folder)
     for file_idx in range(len(files)):
 
