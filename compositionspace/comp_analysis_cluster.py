@@ -180,7 +180,7 @@ def read_rrng(f):
 
 def apt_df_2_big_chunks_arr(folder, NoSlices = 10):
     """
-    Read the data 
+    Cut the data into specified portions
     
     Parameters
     ----------
