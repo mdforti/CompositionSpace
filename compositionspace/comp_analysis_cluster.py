@@ -244,7 +244,18 @@ def apt_df_2_big_chunks_arr(folder, NoSlices = 10):
         
         
 def Voxelisation(Size = 2 ):
-
+    """
+    
+    
+    Parameters
+    ----------
+    
+    Returns
+    -------
+    
+    Notes
+    -----
+    """
     import os
     #path = os.getcwd()+"\\file_R5096_64816_BFA.apt_large_chunks.h5"
     #hdfr = pd.HDFStore(path, mode = "r")
