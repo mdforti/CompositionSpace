@@ -12,3 +12,11 @@
 - [ ] Check variable names: meaningful names needed (prio 1)
 - [ ] Create `setup.py` file (prio 1)
 - [ ] List/add dependencies (prio 1)
+
+# Possible test dataset:
+[teaching data in paraprobe repository](https://gitlab.com/mdforti/paraprobe-toolbox/-/blob/main/teaching/example_data/usa_portland_wang/usa_portland_wang.tar.gz)
+
+# how to start testing
+- [ ] readpos file function
+
+
