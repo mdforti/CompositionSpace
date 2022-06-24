@@ -14,7 +14,7 @@ setup_requirements = ['pytest-runner', ]
 test_requirements = ['pytest>=3', ]
 
 setup(
-    author="Alaukik Saxena, Sarath Menon",
+    author="Alaukik Saxena, Sarath Menon, Mariano Forti",
     author_email='s.menon@mpie.de',
     python_requires='>=3.8',
     classifiers=[
