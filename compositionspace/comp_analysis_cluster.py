@@ -146,7 +146,7 @@ def read_apt_to_df(folder):
 
 
 
-def chunkify_apt_df(folder, no_of_slices = 10):
+def chunkify_apt_df(folder, no_of_slices = 10, prefix=None):
     """
     Cut the data into specified portions
     
@@ -174,7 +174,11 @@ def chunkify_apt_df(folder, no_of_slices = 10):
         df_atom_spec = pd.concat(atoms_spec)
         sorted_df = df_atom_spec.sort_values(by=['z'])
 
-        hdf = h5py.File("./file_{}_large_chunks_arr.h5".format(file.replace(".","_")), "w")
+        filestring = "file_{}_large_chunks_arr.h5".format(file.replace(".","_"))
+        prefix = os.getcwd() if prefix is None else prefix
+        filestring = os.path.join(prefix, filestring)
+        
+        hdf = h5py.File(filestring, "w")
         group1 = hdf.create_group("group_xyz_Da_spec")
         group1.attrs["columns"] = ["x","y","z","Da","spec"]
         group1.attrs["spec_name_order"] = list(c)

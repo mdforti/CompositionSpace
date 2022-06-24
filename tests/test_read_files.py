@@ -1,6 +1,7 @@
 import pytest
 from compositionspace import *
 import numpy as np
+import os
 
 def test_file_rrng():
     datarrng = read_rrng("tests/data/R31_06365-v02.rrng")
@@ -16,3 +17,7 @@ def test_file_df():
     assert data[1][0] == 'R31_06365-v02.pos'
     assert data[2]["name"].values[0] == "C"
     assert np.isclose(data[3]["lower"].values[0]-5.974, 0)
+
+def test_chunkify():
+    chunkify_apt_df("tests/data", prefix="tests")
+    assert os.path.exists("tests/file_R31_06365-v02_pos_large_chunks_arr.h5") == True
