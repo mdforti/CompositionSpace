@@ -17,9 +17,9 @@
 - [ ] HDF5 file contains many entries which slows it down- Store voxel ids  (prio 1)
 
 # Possible test dataset:
-[teaching data in paraprobe repository](https://gitlab.com/mdforti/paraprobe-toolbox/-/blob/main/teaching/example_data/usa_portland_wang/usa_portland_wang.tar.gz)
+- [x] [teaching data in paraprobe repository](https://gitlab.com/mdforti/paraprobe-toolbox/-/blob/main/teaching/example_data/usa_portland_wang/usa_portland_wang.tar.gz): Added data to `tests/data` folder. Now used in tests.
 
 # how to start testing
-- [ ] readpos file function
+- [x] readpos file function
 
 
