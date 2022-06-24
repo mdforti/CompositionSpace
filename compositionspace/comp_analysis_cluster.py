@@ -74,7 +74,7 @@ def read_pos(file_name):
     with open(file_name, 'rb') as f:
         dt_type = np.dtype({'names':['x', 'y', 'z', 'm'], 
                       'formats':['>f4', '>f4', '>f4', '>f4']})
-        pos = np.fromfile(f, dt_type, -1
+        pos = np.fromfile(f, dt_type, -1)
     
     return pos
 
@@ -91,7 +91,6 @@ def read_rrng(file_name):
     Notes
     -----
     """
-    rf = open(f,'r').readlines()
     patterns = re.compile(r'Ion([0-9]+)=([A-Za-z0-9]+).*|Range([0-9]+)=(\d+.\d+) +(\d+.\d+) +Vol:(\d+.\d+) +([A-Za-z:0-9 ]+) +Color:([A-Z0-9]{6})')
     ions = []
     rrngs = []
@@ -136,21 +135,6 @@ def read_apt_to_df(folder):
             df_POS_MASS = pd.DataFrame({'x':pos['x'],'y': pos['y'],'z': pos['z'],'Da': pos['m']})
             df_Mass_POS_lst.append(df_POS_MASS)
             file_name_lst.append(filename)
-                                
-                                            
-        """    
-        if filename.endswith(".apt"):
-            print(filename)
-            PATH = folder+'/'+filename
-            apt = paraprobe_transcoder.paraprobe_transcoder( PATH )
-            apt.read_cameca_apt()
-            POS = apt.Position
-            MASS = apt.Mass
-            POS_MASS = np.concatenate((POS,MASS),axis = 1)
-            df_POS_MASS = pd.DataFrame(POS_MASS, columns = ["x","y","z","Da"])
-            df_Mass_POS_lst.append(df_POS_MASS)
-            file_name_lst.append(filename)
-        """
           
         elif filename.lower().endswith(".rrng"):
             path = os.path.join(folder, filename) 
