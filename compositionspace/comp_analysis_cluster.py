@@ -8,6 +8,10 @@ from numba import jit
 import pickle
 #import paraprobe_transcoder
 import h5py
+import warnings
+
+#really check this!
+pd.options.mode.chained_assignment = None
 
 def label_ions(pos,rrngs):
     pos['comp'] = ''
@@ -160,6 +164,8 @@ def chunkify_apt_df(folder, no_of_slices = 10, prefix=None):
     -----
     """
     df_lst, files, ions, rrngs= read_apt_to_df(folder)
+    filestrings = []
+    prefix = os.getcwd() if prefix is None else prefix
     
     for idx, file in enumerate(files):
         org_file = df_lst[idx]
@@ -175,9 +181,9 @@ def chunkify_apt_df(folder, no_of_slices = 10, prefix=None):
         sorted_df = df_atom_spec.sort_values(by=['z'])
 
         filestring = "file_{}_large_chunks_arr.h5".format(file.replace(".","_"))
-        prefix = os.getcwd() if prefix is None else prefix
         filestring = os.path.join(prefix, filestring)
-        
+        filestrings.append(filestring)
+
         hdf = h5py.File(filestring, "w")
         group1 = hdf.create_group("group_xyz_Da_spec")
         group1.attrs["columns"] = ["x","y","z","Da","spec"]
@@ -193,8 +199,10 @@ def chunkify_apt_df(folder, no_of_slices = 10, prefix=None):
             end += sublength_x 
         hdf.close()                
 
+    return filestrings 
+
         
-def Voxelisation(Size = 2 ):
+def voxelise(filenames, size = 2, prefix=None):
     """
     
     
@@ -207,77 +215,67 @@ def Voxelisation(Size = 2 ):
     Notes
     -----
     """
-    import os
-    #path = os.getcwd()+"\\file_R5096_64816_BFA.apt_large_chunks.h5"
-    #hdfr = pd.HDFStore(path, mode = "r")
+    filestrings = []
+    prefix = os.getcwd() if prefix is None else prefix
 
-    for filename in tqdm(os.listdir(os.getcwd())):    
-            if (filename.endswith("apt_large_chunks_test_arr.h5")):
-                #hdfr = pd.HDFStore(filename, mode = "r")
-                #hdf = pd.HDFStore("./file_{}_small_chunks.h5".format(filename.replace(".","_")))
-                hdfr = h5py.File(filename, "r")
-                with h5py.File("./file_{}_small_chunks_test_arr4.h5".format(filename.replace(".","_")), "w") as hdfw:
+    for filename in filenames:
+        hdfr = h5py.File(filename, "r")
+        filestring = filename.replace("large", "small")
+        filestring = os.path.join(prefix, filestring)
+        filestrings.append(filestring)
 
-                    Group_r = hdfr.get("Group_xyz_Da_spec")
-                    Group_keys = list(Group_r.keys())
-                    columns_r = list(list(Group_r.attrs.values())[0])
+        with h5py.File(filestring, "w") as hdfw:
+            group_r = hdfr.get("group_xyz_Da_spec")
+            group_keys = list(group_r.keys())
+            columns_r = list(list(group_r.attrs.values())[0])
 
-                    #G1 = hdfw.create_group("Group_sm_vox_xyz_Da_spec")
-                    G1 = hdfw.create_group("0")
-                    prev_attri =list(list(Group_r.attrs.values())[0])
-                    prev_attri.append("vox_file")
-                    G1.attrs["columns"] =  prev_attri
-                    G1.attrs["spec_name_order"] = list(list(Group_r.attrs.values())[1])
+            group1 = hdfw.create_group("0")
+            prev_attri =list(list(group_r.attrs.values())[0])
+            prev_attri.append("vox_file")
+            group1.attrs["columns"] =  prev_attri
+            group1.attrs["spec_name_order"] = list(list(group_r.attrs.values())[1])
 
-                    cube_size = Size #2
-                    #file_to_h5 = []
-                    name_sub_file = 0
-                    step = 0
-                    m=0
-                    for key in tqdm(Group_keys):
-                        print(key)
-                        read_array = np.array(Group_r.get(key))
+            name_sub_file = 0
+            step = 0
+            m=0
 
-                        s= pd.DataFrame(data = read_array, columns =  columns_r)
-                        x_min = round(min(s['x']))
-                        x_max = round(max(s['x']))
-                        y_min = round(min(s['y']))
-                        y_max = round(max(s['y']))
-                        z_min = round(min(s['z']))
-                        z_max = round(max(s['z']))   
-                        p=[]
-                        x=[]
+            for key in tqdm(group_keys):
+                read_array = np.array(group_r.get(key))
+                s= pd.DataFrame(data = read_array, columns =  columns_r)
+                x_min = round(min(s['x']))
+                x_max = round(max(s['x']))
+                y_min = round(min(s['y']))
+                y_max = round(max(s['y']))
+                z_min = round(min(s['z']))
+                z_max = round(max(s['z']))   
+                p=[]
+                x=[]
 
-                        for i in range(z_min,z_max,cube_size):
-                            print(i)
-                            cubic = s[s['z'].between(i, i+cube_size, inclusive=True)]
-                            for j in range(y_min,y_max,cube_size):
-                                p = cubic[cubic['y'].between(j, j+cube_size, inclusive=True)]
-                        #        print(j)
-                                for k in range(x_min, x_max, cube_size):
-                    #                print(k)
-                        #            print(k+5)
+                for i in range(z_min, z_max, size):
+                    cubic = s[s['z'].between(i, i+size, inclusive="both")]
+                    for j in range(y_min, y_max, size):
+                        p = cubic[cubic['y'].between(j, j+size, inclusive="both")]
+                        for k in range(x_min, x_max, size):
+                            x = p[p['x'].between(k, k+size, inclusive="both")]
+                            if len(x['x'])>20:
+                                #warnings.warn("I am running some code with hardcoded numbers. Really recheck what's up here!")
+                                name ='cubes_z{}_x{}_y{}'.format(i,j,k).replace("-","m")
+                                if step>99999:
+                                    step=0
+                                    m=m+1
+                                    group1 = hdfw.create_group("{}".format(100000*m))
 
-                                    x = p[p['x'].between(k,k+cube_size, inclusive=True)]
-                                    if len(x['x'])>20:
-                                        name ='cubes_z{}_x{}_y{}'.format(i,j,k).replace("-","m")
-                                        if step>99999:
-                                            print(name_sub_file)
-                                            step=0
-                                            m=m+1
-                                            G1 = hdfw.create_group("{}".format(100000*m))
+                                x["vox_file"] = [name_sub_file for n_file in range(len(x))]
+                                group1.create_dataset("{}".format(name_sub_file), data = x.values)
+                                name_sub_file = name_sub_file+1
+                                step=step+1
+            group1 = hdfw.get("0")
+            group1.attrs["total_voxels"]="{}".format(name_sub_file)
 
-                                        x["vox_file"] = [name_sub_file for n_file in range(len(x))]
-                                        G1.create_dataset("{}".format(name_sub_file), data = x.values)
-                                        name_sub_file = name_sub_file+1
-                                        step=step+1
-                                        #file_to_h5.append("{}".format(name_sub_file))
-                    G1 = hdfw.get("0")
-                    G1.attrs["Total_voxels"]="{}".format(name_sub_file)
-                hdfr.close()
-                    #hdfw.close()
-                    
-                    
+    return filestrings
+
+
+                   
                     
 def VoxelComposition():
     
