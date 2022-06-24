@@ -1,0 +1,13 @@
+name: compspace
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - matplotlib
+  - pytest
+  - pandas
+  - numba
+  - h5py
+  - scikit-learn
+  - tqdm
+  - pyevtk

@@ -1,23 +1,13 @@
 import pandas as pd
 import re
 import os
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
 import pickle
-import paraprobe_transcoder
+#import paraprobe_transcoder
 import h5py
-
-
-# reading in binary (SA).
-def readpos(file_name):
-    f = open(file_name, 'rb') # reading in binary (SA).
-    dt_type = np.dtype({'names':['x', 'y', 'z', 'm'], 
-                  'formats':['>f4', '>f4', '>f4', '>f4']})
-    pos = np.fromfile(f, dt_type, -1)
-    f.close()
-    return pos
 
 def label_ions(pos,rrngs):
     pos['comp'] = ''
@@ -53,7 +43,7 @@ def atom_filter(x, Atom_range):
     return Atom_total, Count_Atom  
 
 
-def readpos(file_name):
+def read_pos(file_name):
     """
     Read the pos file 
     
@@ -80,69 +70,15 @@ def readpos(file_name):
     """
     if not os.path.exists(file_name):
         raise FileNotFoundError("filename does not exist")
-        
-    f = open(file_name, 'rb') # reading in binary (SA).
-    dt_type = np.dtype({'names':['x', 'y', 'z', 'm'], 
-                  'formats':['>f4', '>f4', '>f4', '>f4']})
-    pos = np.fromfile(f, dt_type, -1)
-    f.close()
+    
+    with open(file_name, 'rb') as f:
+        dt_type = np.dtype({'names':['x', 'y', 'z', 'm'], 
+                      'formats':['>f4', '>f4', '>f4', '>f4']})
+        pos = np.fromfile(f, dt_type, -1
+    
     return pos
 
-
-def read_apt_2_df(folder):
-    """
-    Read the data 
-    
-    Parameters
-    ----------
-    
-    Returns
-    -------
-    
-    Notes
-    -----
-    """
-    print("Hi")
-    df_Mass_POS_lst = []
-    file_name_lst=[]
-    
-    for filename in tqdm(os.listdir(folder)):
-        if filename.endswith(".pos"):
-            print(filename)
-            PATH = folder+'/'+filename
-            
-            pos = readpos(PATH)
-            df_POS_MASS = pd.DataFrame({'x':pos['x'],'y': pos['y'],'z': pos['z'],'Da': pos['m']})
-            df_Mass_POS_lst.append(df_POS_MASS)
-            file_name_lst.append(filename)
-                                
-                                
-            
-            
-            
-        if filename.endswith(".apt"):
-            print(filename)
-            PATH = folder+'/'+filename
-            apt = paraprobe_transcoder.paraprobe_transcoder( PATH )
-            apt.read_cameca_apt()
-            POS = apt.Position
-            MASS = apt.Mass
-            POS_MASS = np.concatenate((POS,MASS),axis = 1)
-            df_POS_MASS = pd.DataFrame(POS_MASS, columns = ["x","y","z","Da"])
-            df_Mass_POS_lst.append(df_POS_MASS)
-            file_name_lst.append(filename)
-            
-        if filename.endswith(".RRNG"):
-            rrange_file = folder +"/"+filename
-            print(rrange_file)
-            ions,rrngs = read_rrng(rrange_file)
-            
-    return(df_Mass_POS_lst,file_name_lst,ions,rrngs ) 
-    #return(df_Mass_POS_lst,file_name_lst)
-
-#def read
-
-def read_rrng(f):
+def read_rrng(file_name):
     """
     Read the data 
     
@@ -159,13 +95,16 @@ def read_rrng(f):
     patterns = re.compile(r'Ion([0-9]+)=([A-Za-z0-9]+).*|Range([0-9]+)=(\d+.\d+) +(\d+.\d+) +Vol:(\d+.\d+) +([A-Za-z:0-9 ]+) +Color:([A-Z0-9]{6})')
     ions = []
     rrngs = []
-    for line in rf:
-        m = patterns.search(line)
-        if m:
-            if m.groups()[0] is not None:
-                ions.append(m.groups()[:2])
-            else:
-                rrngs.append(m.groups()[2:])
+    
+    with open(file_name, "r") as rf:
+        for line in rf:
+            m = patterns.search(line)
+            if m:
+                if m.groups()[0] is not None:
+                    ions.append(m.groups()[:2])
+                else:
+                    rrngs.append(m.groups()[2:])
+    
     ions = pd.DataFrame(ions, columns=['number','name'])
     ions.set_index('number',inplace=True)
     rrngs = pd.DataFrame(rrngs, columns=['number','lower','upper','vol','comp','colour'])
@@ -173,6 +112,51 @@ def read_rrng(f):
     rrngs[['lower','upper','vol']] = rrngs[['lower','upper','vol']].astype(float)
     rrngs[['comp','colour']] = rrngs[['comp','colour']].astype(str)
     return ions, rrngs
+                          
+def read_apt_to_df(folder):
+    """
+    Read the data 
+    
+    Parameters
+    ----------
+    
+    Returns
+    -------
+    
+    Notes
+    -----
+    """
+    df_Mass_POS_lst = []
+    file_name_lst=[]
+    
+    for filename in tqdm(os.listdir(folder)):
+        if filename.lower().endswith(".pos"):
+            path = os.path.join(folder, filename)            
+            pos = read_pos(path)
+            df_POS_MASS = pd.DataFrame({'x':pos['x'],'y': pos['y'],'z': pos['z'],'Da': pos['m']})
+            df_Mass_POS_lst.append(df_POS_MASS)
+            file_name_lst.append(filename)
+                                
+                                            
+        """    
+        if filename.endswith(".apt"):
+            print(filename)
+            PATH = folder+'/'+filename
+            apt = paraprobe_transcoder.paraprobe_transcoder( PATH )
+            apt.read_cameca_apt()
+            POS = apt.Position
+            MASS = apt.Mass
+            POS_MASS = np.concatenate((POS,MASS),axis = 1)
+            df_POS_MASS = pd.DataFrame(POS_MASS, columns = ["x","y","z","Da"])
+            df_Mass_POS_lst.append(df_POS_MASS)
+            file_name_lst.append(filename)
+        """
+          
+        elif filename.lower().endswith(".rrng"):
+            path = os.path.join(folder, filename) 
+            ions,rrngs = read_rrng(path)
+            
+    return (df_Mass_POS_lst, file_name_lst, ions, rrngs) 
 
 
 
