@@ -10,7 +10,7 @@
 - [ ] Add tests for (ideally) each file (prio 1): Add folder "tests"
 - [ ] Add some sample data file for tests (prio 1): Data generator from Markus
 - [ ] Check variable names: meaningful names needed (prio 1)
-- [ ] Create `setup.py` file (prio 1)
+- [x] Create `setup.py` file (prio 1)
 - [ ] List/add dependencies (prio 1)
 - [ ] Remove magic numbers (prio 1)
 - [ ] Think of a name for the tool (prio 1)
