@@ -21,7 +21,7 @@ def label_ions(pos,rrngs):
     return pos
 
 #
-def atom_filter(x, Atom_range):
+def atom_filter(x, atom_range):
     """
     Get a list of atom species and their counts
     
@@ -35,12 +35,13 @@ def atom_filter(x, Atom_range):
     -----
     Assuming all the data
     """
-    Atom_total = pd.DataFrame()
-    for i in range(len(Atom_range)):
-        Atom = x[x['Da'].between(Atom_range['lower'][i], Atom_range['upper'][i], inclusive=True)]
-        Atom_total = Atom_total.append(Atom)
-        Count_Atom= len(Atom_total['Da'])   
-    return Atom_total, Count_Atom  
+    dfs = []
+    for i in range(len(atom_range)):
+        atom = x[x['Da'].between(atom_range['lower'][i], atom_range['upper'][i], inclusive="both")]
+        dfs.append(atom)
+    atom_total = pd.concat(dfs)
+    count_Atom= len(atom_total['Da'])   
+    return atom_total, count_Atom  
 
 
 def read_pos(file_name):
@@ -75,6 +76,7 @@ def read_pos(file_name):
         dt_type = np.dtype({'names':['x', 'y', 'z', 'm'], 
                       'formats':['>f4', '>f4', '>f4', '>f4']})
         pos = np.fromfile(f, dt_type, -1)
+        pos = pos.byteswap().newbyteorder()
     
     return pos
 
@@ -144,9 +146,7 @@ def read_apt_to_df(folder):
 
 
 
-
-
-def apt_df_2_big_chunks_arr(folder, NoSlices = 10):
+def chunkify_apt_df(folder, no_of_slices = 10):
     """
     Cut the data into specified portions
     
@@ -159,57 +159,36 @@ def apt_df_2_big_chunks_arr(folder, NoSlices = 10):
     Notes
     -----
     """
-    df_lst, files,ions,rrngs= read_apt_2_df(folder)
-    for file_idx in range(len(files)):
-
-        Org_file =df_lst[file_idx]  
-
+    df_lst, files, ions, rrngs= read_apt_to_df(folder)
+    
+    for idx, file in enumerate(files):
+        org_file = df_lst[idx]
         atoms_spec = []
         c = np.unique(rrngs.comp.values)
         for i in range(len(c)):
-            #print(c[i])
-
             range_element = rrngs[rrngs['comp']=='{}'.format(c[i])]
-            total, Count = atom_filter(Org_file,range_element)
-            #name = c[i]
-            name = i 
-            total["spec"] = [name for j in range(len(total))]
+            total, count = atom_filter(org_file, range_element)
+            total["spec"] = [x for x in range(len(total))]
             atoms_spec.append(total)
 
-        Df_atom_spec = pd.concat(atoms_spec)
-        x_wu=Df_atom_spec
-        sort_x = x_wu.sort_values(by=['z'])
-        
-        ## open hdf5 file 
-        #hdf = pd.HDFStore("./file_{}_large_chunks.h5".format(files[file_idx].replace(".","_")))
-        hdf = h5py.File("./file_{}_large_chunks_test_arr.h5".format(files[file_idx].replace(".","_")), "w")
-        #print("./file_{}_large_chunks_test_arr.h5".format(files[file_idx].replace(".","_")))
-        G1 = hdf.create_group("Group_xyz_Da_spec")
-        G1.attrs["columns"] = ["x","y","z","Da","spec"]
-        G1.attrs["spec_name_order"] = list(c)
-        ##end
-        
-        sublength_x= abs((max(sort_x['z'])-min(sort_x['z']))/NoSlices)
-        #print(sublength_x)
-        start = min(sort_x['z'])
-        end = min(sort_x['z']) +sublength_x
-        for i in tqdm(range(NoSlices)):
-            #temp = sort_x.iloc[start:end]
-            #print(start)
-            #print(end)
-            temp = sort_x[sort_x['z'].between(start, end, inclusive=True)]
+        df_atom_spec = pd.concat(atoms_spec)
+        sorted_df = df_atom_spec.sort_values(by=['z'])
 
-            #temp.to_csv('B3_Hi_ent_cubes/{}.csv'.format(i), index=False)
-            #hdf.put("chunk_{}".format(i), temp, format = "table", data_columns= True)
-            ##Put data into hdf5 file
-            G1.create_dataset("chunk_{}".format(i), data = temp.values)
-            ##end
-            
-            start += sublength_x
-            end += sublength_x
-            #print(end) 
-        hdf.close()
+        hdf = h5py.File("./file_{}_large_chunks_arr.h5".format(file.replace(".","_")), "w")
+        group1 = hdf.create_group("group_xyz_Da_spec")
+        group1.attrs["columns"] = ["x","y","z","Da","spec"]
+        group1.attrs["spec_name_order"] = list(c)
+        sublength_x= abs((max(sorted_df['z'])-min(sorted_df['z']))/no_of_slices)
+        start = min(sorted_df['z'])
+        end = min(sorted_df['z']) + sublength_x
         
+        for i in tqdm(range(no_of_slices)):
+            temp = sorted_df[sorted_df['z'].between(start, end, inclusive="both")]
+            group1.create_dataset("chunk_{}".format(i), data = temp.values)
+            start += sublength_x
+            end += sublength_x 
+        hdf.close()                
+
         
 def Voxelisation(Size = 2 ):
     """
