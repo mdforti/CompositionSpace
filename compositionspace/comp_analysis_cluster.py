@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
 import pickle
+import time
 #import paraprobe_transcoder
 import h5py
 import warnings
@@ -277,73 +278,67 @@ def voxelise(filenames, size = 2, prefix=None):
 
                    
                     
-def VoxelComposition():
-    
-    import os
-    Small_chunk_file_name = "./file_file_D1 High Hc R5076_52126_apt_large_chunks_test_arr_h5_small_chunks_test_arr4.h5"
-    hdf_sm_r = h5py.File(Small_chunk_file_name,"r")
+def calculate_voxel_composition(small_chunk_file_name, outfilename="3Vox_ratios_filenames_num_MR_Grp.h5"):
+    """
+    This works only a single filename; check
+    """
+    hdf_sm_r = h5py.File(small_chunk_file_name, "r")
     group = hdf_sm_r.get("0")
-    Total_Voxels =list(list(group.attrs.values())[0])
-    SpecLstLen = len(list(list(group.attrs.values())[2]))
+        
+    #SRM: changed to indice 2 for the first one. Please check.
+    total_voxels =list(list(group.attrs.values())[2])
+    spec_lst_len = len(list(list(group.attrs.values())[2]))
 
     items = list(hdf_sm_r.items())
     item_lst = []
+    ### CHECK THESE NUMBERS!
     for item in range(len(items)):
-        item_lst.append([100000*(item),100000*(item+1)])
+        item_lst.append([100000*(item), 100000*(item+1)])
     item_lst = np.array(item_lst)
     
-    #Total_Voxels[0]+Total_Voxels[1]
-    Total_Voxels_int =""
-    for number in Total_Voxels:
-        Total_Voxels_int = Total_Voxels_int+ number
-
-    Total_Voxels_int = int(Total_Voxels_int)
-
-    #files = ["Group_sm_vox_xyz_Da_spec/"+"{}".format(file_num) for file_num in range(905667)]
-    files = [file_num for file_num in range(Total_Voxels_int)]
     
-    import time
-    Spec_names =  np.arange(SpecLstLen)
-    Dic_ratios = {}
-    for Spec_name in Spec_names:
-        Dic_ratios["{}".format(Spec_name)]=[]
+    total_voxels_int =""
+    for number in total_voxels:
+        total_voxels_int = total_voxels_int + number
 
-    Dic_ratios["Total_no"]=[]
-    Dic_ratios["file_name"]=[]
-    Dic_ratios["vox"] = []
+    total_voxels_int = int(total_voxels_int)
 
-    Ratios = []
+    files = [file_num for file_num in range(total_voxels_int)]
+    
+    
+    spec_names =  np.arange(spec_lst_len)
+    dic_ratios = {}
+    for spec_name in spec_names:
+        dic_ratios["{}".format(spec_name)] = []
+
+    dic_ratios["Total_no"]=[]
+    dic_ratios["file_name"]=[]
+    dic_ratios["vox"] = []
+
+    ratios = []
     f_count = 0
     for filename in tqdm(files):
         group = np.min(item_lst[[filename in range(j[0],j[1]) for j in item_lst]])
-        #print(group)
         arr = np.array(hdf_sm_r.get("{}/{}".format(group,filename))[:,4])
         N_x = len(arr)
 
-        #start = time.time()
-        for Spec in (Spec_names):
-            #print(Spec)
+        for spec in (spec_names):
+            ratio = (len(np.argwhere(arr==spec)))/N_x
+            dic_ratios["{}".format(spec)].append(ratio)
 
-            ratio = (len(np.argwhere(arr==Spec)))/N_x
-            Dic_ratios["{}".format(Spec)].append(ratio)
-
-        #end = time.time()
-        #print(end - start)
-
-
-        Dic_ratios["file_name"].append(filename)
-        Dic_ratios["vox"].append(f_count)
-        Dic_ratios["Total_no"].append(N_x)
+        dic_ratios["file_name"].append(filename)
+        dic_ratios["vox"].append(f_count)
+        dic_ratios["Total_no"].append(N_x)
         f_count = f_count+1
         
-    df = pd.DataFrame.from_dict(Dic_ratios)
+    df = pd.DataFrame.from_dict(dic_ratios)
 
     
-    with h5py.File("3Vox_ratios_filenames_num_MR_Grp.h5", "w") as hdfw:
+    with h5py.File(outfilename, "w") as hdfw:
         hdfw.create_dataset("vox_ratios", data =df.drop("file_name", axis = 1).values )
         hdfw.attrs["what"] = ["All the Vox ratios for a given APT smaple"]
         hdfw.attrs["howto_Group_name"] = ["Group_sm_vox_xyz_Da_spec/"]
-        hdfw.attrs["colomns"]= ['0.0', '1.0', '2.0', '3.0', '4.0', 'Total_no', 'vox']
+        hdfw.attrs["columns"]= ['0.0', '1.0', '2.0', '3.0', '4.0', 'Total_no', 'vox']
 
     hdf_sm_r.close()
     

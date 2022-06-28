@@ -21,3 +21,9 @@ def test_file_df():
 def test_chunkify():
     chunkify_apt_df("tests/data", prefix="tests")
     assert os.path.exists("tests/file_R31_06365-v02_pos_large_chunks_arr.h5") == True
+
+def test_voxelise():
+    files = chunkify_apt_df("tests/data")
+    files2 = voxelise(files)
+    calculate_voxel_composition(files2[0], outfilename="tests/voxel_comp.h5")
+    assert os.path.exists("tests/voxel_comp.h5") == True
