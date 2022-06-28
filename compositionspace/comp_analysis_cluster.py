@@ -434,7 +434,7 @@ def get_centroid_from_vox(vox_file, files_arr):
         for filename in tqdm(files_arr):
             group = np.min(item_lst[[filename in range(j[0],j[1]) for j in item_lst]])
             xyz_Da_spec_atoms = np.array(hdf.get("{}/{}".format(group, filename)))
-            x, y, z = calculate_centeroid(xyz_Da_spec_atoms)
+            x, y, z = calculate_centroid(xyz_Da_spec_atoms)
             dic_centroids["x"].append(x)
             dic_centroids["y"].append(y)
             dic_centroids["z"].append(z)
@@ -517,6 +517,6 @@ def save_composition_clusters(df_dis2, df_dis1, df_dis0, cluster_0, cluster_1, c
     
     for i in range(len(files_list)):
         
-        centroids_cic = get_centroid_from_vox(vox_file, files_arr = files_list[i])
+        centroids_dic = get_centroid_from_vox(vox_file, files_arr = files_list[i])
         groups_list[i].create_dataset("{}".format(phases_names[i]), data = pd.DataFrame.from_dict(centroids_dic).values)
     hdfw.close()
