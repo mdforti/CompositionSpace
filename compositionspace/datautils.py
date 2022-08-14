@@ -1,5 +1,5 @@
 #from Segmentation.tools import paraprobe_transcoder
-import paraprobe_transcoder
+import compositionspace.paraprobe_transcoder as paraprobe_transcoder
 import pandas as pd 
 import re
 import os

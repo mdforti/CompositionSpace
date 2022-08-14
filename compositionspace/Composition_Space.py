@@ -1,5 +1,5 @@
-from Segmentation.datautils.data_utils import Prepare_data
-from Segmentation.models.models import get_model
+from compositionspace.datautils import Prepare_data
+from compositionspace.models import get_model
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 import json 
@@ -9,6 +9,8 @@ import pandas as pd
 import matplotlib.pylab as plt
 from tqdm import tqdm
 import os
+from pyevtk.hl import pointsToVTK
+from pyevtk.hl import gridToVTK#, pointsToVTKAsTIN
 
 class Composition_Space():
     
@@ -159,87 +161,96 @@ class Composition_Space():
         #gm = GaussianMixture(n_components=n_components, max_iter=100000,verbose=0)
         gm.fit(X)
         y_pred=gm.predict(X)
+        
+        cluster_lst = []
+        for phase in range(n_components):
+            cluster_lst.append(np.argwhere(y_pred == phase).flatten())        
+        df_lst = []
+        for cluster in cluster_lst:
+            df_lst.append(Ratios.iloc[cluster])
+            
+        #sorting
+        cluster_lst_sort = []
+        len_arr = np.array([len(x) for x in cluster_lst])
+        sorted_len_arr = np.sort(len_arr)
+        for length in sorted_len_arr:
+            print()
 
-        cluster_0 = np.argwhere(y_pred == 0)
-        cluster_1 = np.argwhere(y_pred == 1)
-        cluster_2 = np.argwhere(y_pred == 2)
+            cluster_lst_sort.append(cluster_lst[np.argwhere(len_arr == length)[0,0]])
 
-        df_dis2 = Ratios.iloc[cluster_2.flatten()]
-        df_dis1 = Ratios.iloc[cluster_1.flatten()]
-        df_dis0 = Ratios.iloc[cluster_0.flatten()]
-        return df_dis2, df_dis1,df_dis0, cluster_0,cluster_1,cluster_2,Ratios
+        print([len(x) for x in cluster_lst_sort])
+        cluster_lst = cluster_lst_sort
+        
+        return cluster_lst,Ratios
     
-    def SaveCompositionClusters(self,ml_params):
+    def get_composition_clusters(self,ml_params):
         OutFile = self.params['output_path'] + "/Output_voxel_cetroids_phases.h5"
         n_components = self.params["n_phases"]
         VoxRatioFile = self.params['output_path'] + "/Output_voxel_composition.h5"
         VoxFile = self.params['output_path'] + "/Output_voxels.h5"
 
-        df_dis2, df_dis1,df_dis0, cluster_0,cluster_1,cluster_2,Ratios = self.CompositionCluster(VoxRatioFile, VoxFile, n_components,ml_params)
+        cluster_lst,Ratios = self.CompositionCluster(VoxRatioFile, VoxFile, n_components,ml_params)
 
-        plot_files_cl_0 = []
-        plot_files_cl_1 = []
-        plot_files_cl_2 = []
+        plot_files = []
+        for phase in range(len(cluster_lst)):
+            cluster_files = []
+            cluster = cluster_lst[phase]
+            for voxel_id in cluster:
+                cluster_files.append(Ratios['vox'][voxel_id])
+            plot_files.append(cluster_files)
 
-        #for i in cluster_2.flatten():
-        #    plot_files_cl_2.append(Ratios['filename'][i])
+        plot_files_group = []
+        for cluster_files in plot_files:
+            plot_files_group.append([int(file_num) for file_num in cluster_files ])
+            
+        with h5py.File(VoxFile,"r") as hdf_sm_r:
+            hdf_sm_r = h5py.File(VoxFile,"r")
+            group = hdf_sm_r.get("0")
+            Total_Voxels =list(list(group.attrs.values())[0])
 
-        for i in cluster_0.flatten():
-            plot_files_cl_0.append(Ratios['vox'][i])
-        for i in cluster_1.flatten():
-            plot_files_cl_1.append(Ratios['vox'][i])
+            Total_Voxels_int =""
+            for number in Total_Voxels:
+                Total_Voxels_int = Total_Voxels_int+ number
 
-        for i in cluster_2.flatten():
-            plot_files_cl_2.append(Ratios['vox'][i])
+            Total_Voxels_int = int(Total_Voxels_int)
+            hdf_sm_r.close()
+            plot_files_cl_All_group = [file_num for file_num in range(Total_Voxels_int)]
+            
+        plot_files_group.append(plot_files_cl_All_group)
 
+        with h5py.File(OutFile,"w") as hdfw:
+            for cluster_file_id in range(len(plot_files_group)):
 
-        #get the item name for h5 file
-        plot_files_cl_0_group = [int(file_num) for file_num in plot_files_cl_0 ]
-        plot_files_cl_1_group = [int(file_num) for file_num in plot_files_cl_1 ]
-        plot_files_cl_2_group = [int(file_num) for file_num in plot_files_cl_2 ]
+                G = hdfw.create_group(f"{cluster_file_id}")
+                G.attrs["what"] = ["Centroid of voxels"]
+                G.attrs["howto_Group_name"] = ["Group_sm_vox_xyz_Da_spec/"]
+                G.attrs["colomns"] = ["x","y","z","file_name"]
 
-        hdfw = h5py.File(OutFile,"w")
+                CentroidsDic = self.get_voxel_centroid(VoxFile= VoxFile, FilesArr= plot_files_group[cluster_file_id])
+                G.create_dataset(f"{cluster_file_id}", data = pd.DataFrame.from_dict(CentroidsDic).values)
 
-        G1 = hdfw.create_group("All")
-        G1.attrs["what"] = ["Centroid of All voxels"]
-        G1.attrs["howto_Group_name"] = ["Group_sm_vox_xyz_Da_spec/"]
-        G1.attrs["colomns"] = ["x","y","z","file_name"]
+    def plot3d(self):
+        
+        OutFile = self.params['output_path'] + "/Output_voxel_cetroids_phases"
 
-        G2 = hdfw.create_group("Phase1")
-        G2.attrs["what"] = ["Centroid of Phase1 voxels"]
-        G2.attrs["howto_Group_name"] = ["Group_sm_vox_xyz_Da_spec/"]
-        G2.attrs["colomns"] = ["x","y","z","file_name"]
+        Voxel_centroid_phases_files = self.params['output_path'] + "/Output_voxel_cetroids_phases.h5"
 
-        G3 = hdfw.create_group("Phase2")
-        G3.attrs["what"] = ["Centroid of Phase2 voxels"]
-        G3.attrs["howto_Group_name"] = ["Group_sm_vox_xyz_Da_spec/"]
-        G3.attrs["colomns"] = ["x","y","z","file_name"]
+        with h5py.File(Voxel_centroid_phases_files , "r") as hdfr:
+            
+            groups =list(hdfr.keys())
+            for group in range(len(groups)-2):
+                Phase_arr =  np.array(hdfr.get(f"{group}/{group}"))
+                Phase_columns = list(list(hdfr.get(f"{group}").attrs.values())[0])
+                Phase_cent_df =pd.DataFrame(data=Phase_arr, columns=Phase_columns)
+                
+                image = Phase_cent_df.values
+                FILE_PATH1 = OutFile + f"_{group}"
+                print(FILE_PATH1)
+                x = np.ascontiguousarray(image[:,0])
+                y= np.ascontiguousarray(image[:,1])
+                z = np.ascontiguousarray(image[:,2])
+                label = np.ascontiguousarray( image[:,3])
+                pointsToVTK(FILE_PATH1,x,y,z, data = {"label" : label}  )
 
-
-        ##All
-       
-        #Small_chunk_file_name = "./file_file_D3_High_Hc_R5076_53143_apt_large_chunks_test_arr_h5_small_chunks_test_arr4.h5"
-        hdf_sm_r = h5py.File(VoxFile,"r")
-        group = hdf_sm_r.get("0")
-        Total_Voxels =list(list(group.attrs.values())[0])
-
-        Total_Voxels_int =""
-        for number in Total_Voxels:
-            Total_Voxels_int = Total_Voxels_int+ number
-
-        Total_Voxels_int = int(Total_Voxels_int)
-        hdf_sm_r.close()
-        plot_files_cl_All_group = [file_num for file_num in range(Total_Voxels_int)]
-        #files = [file_num for file_num in range(905667)]
-
-        FilesList = [plot_files_cl_All_group, plot_files_cl_1_group, plot_files_cl_2_group]
-        GroupsList = [G1,G2,G3]
-        PhasesNames = ["All","Ph1", "Ph2"] 
-
-        for i in range(len(FilesList)):
-
-            CentroidsDic = self.get_voxel_centroid(VoxFile= VoxFile, FilesArr= FilesList[i])
-            GroupsList[i].create_dataset("{}".format(PhasesNames[i]), data = pd.DataFrame.from_dict(CentroidsDic).values)
-        hdfw.close()
 
 

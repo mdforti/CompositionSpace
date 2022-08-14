@@ -1,6 +1,6 @@
 {
    "input_path": "/u/gazal/APT_calculations/for_nikita_Sm_Zr_Cu_Fe/APT_exp_Data_D3/D1",
-   "output_path": "/u/gazal/APT_calculations/for_nikita_Sm_Zr_Cu_Fe/20220613_APT_NFDI/Nfdi_workflow/APT_analysis/Composition_space_approach/output",
+   "output_path": "/u/gazal/APT_calculations/CompositionSpace_git/CompositionSpaceNFDI/tests/output",
    "n_big_slices": 10,
     "voxel_size": 2,
     "bics_clusters": 10,
