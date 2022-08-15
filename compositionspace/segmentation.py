@@ -141,7 +141,7 @@ class Composition_clustering():
         return Dic_centroids
 
     
-    def CompositionCluster(self, VoxRatioFile, VoxFile,n_components,ml_params):
+    def get_composition_cluster_files(self, VoxRatioFile, VoxFile,n_components,ml_params):
         
         with h5py.File(VoxFile,"r") as hdf:
             group = hdf.get("Group_sm_vox_xyz_Da_spec")
@@ -189,7 +189,7 @@ class Composition_clustering():
         VoxRatioFile = self.params['output_path'] + "/Output_voxel_composition.h5"
         VoxFile = self.params['output_path'] + "/Output_voxels.h5"
 
-        cluster_lst,Ratios = self.CompositionCluster(VoxRatioFile, VoxFile, n_components,ml_params)
+        cluster_lst,Ratios = self.get_composition_cluster_files(VoxRatioFile, VoxFile, n_components,ml_params)
 
         plot_files = []
         for phase in range(len(cluster_lst)):

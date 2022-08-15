@@ -13,7 +13,25 @@ class Postprocess_data():
     def __init__(self,params):
         self.params = params
 
-    def get_post_centroids(self,Voxel_centroid_phases_files ,cluster_id):
+    def get_post_centroids(self,Voxel_centroid_phases_files, cluster_id):
+        
+        """
+        Reads the voxel centroids for a phase  
+
+        Parameters
+        ----------
+        Voxel_centroid_phases_files : str, Voxel cetroids corresponding to each phase
+        cluster_id: int, phase id in Voxel_centroid_phases_files
+
+        Returns
+        -------
+        pandas dataframe for voxel cetroids(x,y,z, voxelId), pandas dataframe for voxel cetroids(x,y,z),
+        list of coloumn names (x,y,z, voxelId)
+        
+        Notes
+        -----
+        input is taken from composition space based segmentation of phases.
+        """
 
 
         with h5py.File(Voxel_centroid_phases_files , "r") as hdfr:
@@ -31,6 +49,37 @@ class Postprocess_data():
 
         
     def DBSCAN_clustering(self, cluster_id, eps, min_samples,plot= False, plot3d = False, save =False):
+        """
+        Get individual clusters or precipitates corresponding to each phase/ chemical domain.
+        DBSCAN is applied on the centroids of the voxels helping to remove noisy voxels around clusters.
+
+        Parameters
+        ----------
+        cluster_id: int,id of the phase/chemical domain in Output_voxel_cetroids_phases.h5
+        
+        eps: float,epsilon is a hyperparameter for DBSCAN.The maximum distance between two samples for one to be 
+        considered as in the neighborhood of the other. This is not a maximum bound on the distances of 
+        points within a cluster.
+        
+        min_smaples: int, min_smaples is a hyperparameter for DBSCAN. The number of samples (or total weight) in a
+        neighborhood for a point to be considered as a core point. This includes the point itself.
+        
+        plot: boolean, if true plots the histogram of the cluster for found by the DBSCAN algorithm.
+        
+        plot3d: boolean, if true plots voxel centroids in corresponding to each precipitate and outputs a .vtu file .
+        
+        save: boolean, saves a .h5 file corresponding to a cluster_id containing centroids for each precipitate.
+        
+
+        Returns
+        -------
+        Voxel centroids corresponding to each precipitate.
+        
+        
+        Notes
+        -----
+        input is taken from composition space based segmentation of phases.
+        """        
         OutFile_path = self.params['output_path'] 
         Voxel_centroid_phases_files = self.params['output_path'] +"/Output_voxel_cetroids_phases.h5"
 
