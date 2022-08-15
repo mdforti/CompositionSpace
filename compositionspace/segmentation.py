@@ -12,7 +12,7 @@ import os
 from pyevtk.hl import pointsToVTK
 from pyevtk.hl import gridToVTK#, pointsToVTKAsTIN
 
-class Composition_Space():
+class Composition_clustering():
     
     def __init__(self,params):
         self.params = params
