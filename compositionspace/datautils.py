@@ -71,14 +71,14 @@ class Prepare_data():
         file_name_lst=[]
         for filename in tqdm(os.listdir(folder)):
             if filename.endswith(".pos"):
-                print(filename)
+                #print(filename)
                 PATH = folder+'/'+filename
                 pos = self.get_pos(PATH)
                 df_POS_MASS = pd.DataFrame({'x':pos['x'],'y': pos['y'],'z': pos['z'],'Da': pos['m']})
                 df_Mass_POS_lst.append(df_POS_MASS)
                 file_name_lst.append(filename)
             if filename.endswith(".apt"):
-                print(filename)
+                #print(filename)
                 PATH = folder+'/'+filename
                 apt = paraprobe_transcoder.paraprobe_transcoder( PATH )
                 apt.read_cameca_apt()
@@ -90,14 +90,14 @@ class Prepare_data():
                 file_name_lst.append(filename)
             if filename.endswith(".RRNG"):
                 rrange_file = folder +"/"+filename
-                print(rrange_file)
+                #print(rrange_file)
                 ions,rrngs = self.get_rrng(rrange_file)
         return(df_Mass_POS_lst,file_name_lst,ions,rrngs ) 
 
     
     def get_big_slices(self): #folder
         df_lst, files,ions,rrngs= self.get_apt_dataframe(self.params["input_path"])# folder
-        print("hi")
+        #print("hi")
         for file_idx in range(len(files)):
             Org_file =df_lst[file_idx]  
             atoms_spec = []
@@ -145,10 +145,8 @@ class Prepare_data():
 
 
     def get_big_slices_molecules(self):
-        print("hi")
         df_lst, files,ions,rrngs = self.get_apt_dataframe(self.params["input_path"])
         for file_idx in range(len(files)):
-            print("hi")
             Org_file =df_lst[file_idx]  
 
             atoms_spec = []
@@ -285,7 +283,7 @@ class Prepare_data():
                         step = 0
                         m=0
                         for key in tqdm(Group_keys):
-                            print(key)
+                            #print(key)
                             read_array = np.array(Group_r.get(key))
 
                             s= pd.DataFrame(data = read_array, columns =  columns_r)
@@ -299,20 +297,20 @@ class Prepare_data():
                             x=[]
 
                             for i in range(z_min,z_max,cube_size):
-                                print(i)
+                                #print(i)
                                 cubic = s[s['z'].between(i, i+cube_size, inclusive=True)]
                                 for j in range(y_min,y_max,cube_size):
                                     p = cubic[cubic['y'].between(j, j+cube_size, inclusive=True)]
-                            #        print(j)
+                            #        #print(j)
                                     for k in range(x_min, x_max, cube_size):
-                        #                print(k)
-                            #            print(k+5)
+                        #                #print(k)
+                            #            #print(k+5)
 
                                         x = p[p['x'].between(k,k+cube_size, inclusive=True)]
                                         if len(x['x'])>20:
                                             name ='cubes_z{}_x{}_y{}'.format(i,j,k).replace("-","m")
                                             if step>99999:
-                                                print(name_sub_file)
+                                                #print(name_sub_file)
                                                 step=0
                                                 m=m+1
                                                 G1 = hdfw.create_group("{}".format(100000*m))
