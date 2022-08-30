@@ -252,40 +252,4 @@ class Composition_clustering():
                 label = np.ascontiguousarray( image[:,3])
                 pointsToVTK(FILE_PATH1,x,y,z, data = {"label" : label}  )
 
-"""                
-    def data_features(self):
-        
-        """
-        1. species and their ID 
-        2. number of atoms
-        3. number of voxels
-        4. voxels of each phase/ phase fractions
-        5. pandas Dataframes for plotting comosition space
-        6. atoms of each voxels 
-        7. average composition of every phase
-        
-        
-        """
-        OutFile = self.params['output_path'] + "/Output_voxel_cetroids_phases"
-
-        Voxel_centroid_phases_files = self.params['output_path'] + "/Output_voxel_cetroids_phases.h5"
-
-        with h5py.File(Voxel_centroid_phases_files , "r") as hdfr:
-            
-            groups =list(hdfr.keys())
-            for group in range(len(groups)-2):
-                Phase_arr =  np.array(hdfr.get(f"{group}/{group}"))
-                Phase_columns = list(list(hdfr.get(f"{group}").attrs.values())[0])
-                Phase_cent_df =pd.DataFrame(data=Phase_arr, columns=Phase_columns)
-                
-                image = Phase_cent_df.values
-                FILE_PATH1 = OutFile + f"_{group}"
-                print(FILE_PATH1)
-                x = np.ascontiguousarray(image[:,0])
-                y= np.ascontiguousarray(image[:,1])
-                z = np.ascontiguousarray(image[:,2])
-                label = np.ascontiguousarray( image[:,3])
-                pointsToVTK(FILE_PATH1,x,y,z, data = {"label" : label}  )
-"""
-
 

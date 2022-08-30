@@ -3,11 +3,14 @@ import compositionspace.paraprobe_transcoder as paraprobe_transcoder
 import pandas as pd 
 import re
 import os
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py    
 import time
+
+#really check this!
+pd.options.mode.chained_assignment = None
 
 class Prepare_data():
     
@@ -16,12 +19,40 @@ class Prepare_data():
         self.version="1.0.0"
 
         
-    def get_pos(self,file_name):
-        f = open(file_name, 'rb') # reading in binary (SA).
-        dt_type = np.dtype({'names':['x', 'y', 'z', 'm'], 
-                      'formats':['>f4', '>f4', '>f4', '>f4']})
-        pos = np.fromfile(f, dt_type, -1)
-        f.close()
+    def read_pos(self, file_name):
+        """
+        Read the pos file 
+        
+        Parameters
+        ----------
+        file_name: string
+            Name of the input file
+        
+        Returns
+        -------
+        pos: np structured array
+            The atom positions and ---- ratio
+        
+        Notes
+        -----
+        Assumptions
+        
+        Examples
+        --------
+        
+        Raises
+        ------
+        FileNotFoundError: describe
+        """
+        if not os.path.exists(file_name):
+            raise FileNotFoundError("filename does not exist")
+        
+        with open(file_name, 'rb') as f:
+            dt_type = np.dtype({'names':['x', 'y', 'z', 'm'], 
+                          'formats':['>f4', '>f4', '>f4', '>f4']})
+            pos = np.fromfile(f, dt_type, -1)
+            pos = pos.byteswap().newbyteorder()
+        
         return pos
 
     
@@ -36,27 +67,55 @@ class Prepare_data():
         return pos
 
 
-    def atom_filter(self,x, Atom_range):
-        Atom_total = pd.DataFrame()
-        for i in range(len(Atom_range)):
-            Atom = x[x['Da'].between(Atom_range['lower'][i], Atom_range['upper'][i], inclusive=True)]
-            Atom_total = Atom_total.append(Atom)
-            Count_Atom= len(Atom_total['Da'])   
-        return Atom_total, Count_Atom          
+    def atom_filter(self, x, atom_range):
+        """
+        Get a list of atom species and their counts
+        
+        Parameters
+        ----------
+        
+        Returns
+        -------
+        
+        Notes
+        -----
+        Assuming all the data
+        """
+        dfs = []
+        for i in range(len(atom_range)):
+            atom = x[x['Da'].between(atom_range['lower'][i], atom_range['upper'][i], inclusive="both")]
+            dfs.append(atom)
+        atom_total = pd.concat(dfs)
+        count_Atom= len(atom_total['Da'])   
+        return atom_total, count_Atom         
         
  
-    def get_rrng(self,f):
-        rf = open(f,'r').readlines()
+    def read_rrng(self, file_name):
+        """
+        Read the data 
+        
+        Parameters
+        ----------
+        
+        Returns
+        -------
+        
+        Notes
+        -----
+        """
         patterns = re.compile(r'Ion([0-9]+)=([A-Za-z0-9]+).*|Range([0-9]+)=(\d+.\d+) +(\d+.\d+) +Vol:(\d+.\d+) +([A-Za-z:0-9 ]+) +Color:([A-Z0-9]{6})')
         ions = []
         rrngs = []
-        for line in rf:
-            m = patterns.search(line)
-            if m:
-                if m.groups()[0] is not None:
-                    ions.append(m.groups()[:2])
-                else:
-                    rrngs.append(m.groups()[2:])
+        
+        with open(file_name, "r") as rf:
+            for line in rf:
+                m = patterns.search(line)
+                if m:
+                    if m.groups()[0] is not None:
+                        ions.append(m.groups()[:2])
+                    else:
+                        rrngs.append(m.groups()[2:])
+        
         ions = pd.DataFrame(ions, columns=['number','name'])
         ions.set_index('number',inplace=True)
         rrngs = pd.DataFrame(rrngs, columns=['number','lower','upper','vol','comp','colour'])
@@ -66,19 +125,35 @@ class Prepare_data():
         return ions, rrngs
 
     
-    def get_apt_dataframe(self,folder):
+    def get_apt_dataframe(self, folder):
+        """
+        Read the data 
+        
+        Parameters
+        ----------
+        
+        Returns
+        -------
+        
+        Notes
+        -----
+        """
         df_Mass_POS_lst = []
         file_name_lst=[]
+        ions = None 
+        rrngs = None
+
         for filename in tqdm(os.listdir(folder)):
-            if filename.endswith(".pos"):
-                PATH = folder+'/'+filename
-                pos = self.get_pos(PATH)
+            if filename.lower().endswith(".pos"):
+                path = os.path.join(folder, filename)            
+                pos = self.read_pos(path)
                 df_POS_MASS = pd.DataFrame({'x':pos['x'],'y': pos['y'],'z': pos['z'],'Da': pos['m']})
                 df_Mass_POS_lst.append(df_POS_MASS)
                 file_name_lst.append(filename)
+            
             if filename.endswith(".apt"):
-                PATH = folder+'/'+filename
-                apt = paraprobe_transcoder.paraprobe_transcoder( PATH )
+                path = os.path.join(folder, filename) 
+                apt = paraprobe_transcoder.paraprobe_transcoder(path)
                 apt.read_cameca_apt()
                 POS = apt.Position
                 MASS = apt.Mass
@@ -86,80 +161,77 @@ class Prepare_data():
                 df_POS_MASS = pd.DataFrame(POS_MASS, columns = ["x","y","z","Da"])
                 df_Mass_POS_lst.append(df_POS_MASS)
                 file_name_lst.append(filename)
-            if filename.endswith(".RRNG"):
-                rrange_file = folder +"/"+filename
-                ions,rrngs = self.get_rrng(rrange_file)
-        return(df_Mass_POS_lst,file_name_lst,ions,rrngs ) 
+
+            if filename.lower().endswith(".rrng"):
+                path = os.path.join(folder, filename) 
+                ions, rrngs = self.read_rrng(path)
+                
+        return (df_Mass_POS_lst, file_name_lst, ions, rrngs)
 
     
-    def get_big_slices(self): #folder
-        df_lst, files,ions,rrngs= self.get_apt_dataframe(self.params["input_path"])# folder
+    def get_big_slices(self):
+        """
+        Cut the data into specified portions
+        
+        Parameters
+        ----------
+        
+        Returns
+        -------
+        
+        Notes
+        -----
+        """
+        df_lst, files, ions, rrngs= self.get_apt_dataframe(self.params["input_path"])# folder
+        
         for file_idx in range(len(files)):
-            Org_file =df_lst[file_idx]  
+            Org_file = df_lst[file_idx]
             atoms_spec = []
             c = np.unique(rrngs.comp.values)
             for i in range(len(c)):
-                #print(c[i])
                 range_element = rrngs[rrngs['comp']=='{}'.format(c[i])]
-                total, Count = self.atom_filter(Org_file,range_element)
-                #name = c[i]
+                total, count = self.atom_filter(Org_file,range_element)
                 name = i 
                 total["spec"] = [name for j in range(len(total))]
                 atoms_spec.append(total)
-            Df_atom_spec = pd.concat(atoms_spec)
-            x_wu=Df_atom_spec
-            sort_x = x_wu.sort_values(by=['z'])
-            ## open hdf5 file 
-            #hdf = pd.HDFStore("./file_{}_large_chunks.h5".format(files[file_idx].replace(".","_")))
-            #output_path = self.params['output_path'] + "/Output_{}_large_chunks_test_arr.h5".format(files[file_idx].replace(".","_"))
-            output_path = self.params['output_path'] + "/Output_big_slices.h5"
+            
+            df_atom_spec = pd.concat(atoms_spec)
+            x_wu = df_atom_spec
+            sort_x = df_atom_spec.sort_values(by=['z'])
+
+            output_path = os.path.join(self.params['output_path'], "Output_big_slices.h5")
+            
             hdf = h5py.File(output_path, "w")
-            #print("./file_{}_large_chunks_test_arr.h5".format(files[file_idx].replace(".","_")))
             G1 = hdf.create_group("Group_xyz_Da_spec")
             G1.attrs["columns"] = ["x","y","z","Da","spec"]
             G1.attrs["spec_name_order"] = list(c)
             sublength_x= abs((max(sort_x['z'])-min(sort_x['z']))/self.params["n_big_slices"])
-            #print(sublength_x)
+            
             start = min(sort_x['z'])
             end = min(sort_x['z']) +sublength_x
             for i in tqdm(range(self.params["n_big_slices"])):
-                #temp = sort_x.iloc[start:end]
-                #print(start)
-                #print(end)
-                temp = sort_x[sort_x['z'].between(start, end, inclusive=True)]
-                #temp.to_csv('B3_Hi_ent_cubes/{}.csv'.format(i), index=False)
-                #hdf.put("chunk_{}".format(i), temp, format = "table", data_columns= True)
-                ##Put data into hdf5 file
+                temp = sort_x[sort_x['z'].between(start, end, inclusive="both")]
                 G1.create_dataset("chunk_{}".format(i), data = temp.values)
-                ##end
                 start += sublength_x
                 end += sublength_x
-                #print(end) 
             hdf.close()
 
 
 
-
     def get_big_slices_molecules(self):
-        df_lst, files,ions,rrngs = self.get_apt_dataframe(self.params["input_path"])
+        df_lst, files, ions, rrngs = self.get_apt_dataframe(self.params["input_path"])
         for file_idx in range(len(files)):
             Org_file =df_lst[file_idx]  
             atoms_spec = []
             c = np.unique(rrngs.comp.values)
             for i in range(len(c)):
-                print(c[i])
-
                 range_element = rrngs[rrngs['comp']=='{}'.format(c[i])]
                 total, Count = atom_filter(Org_file,range_element)
                 name = c[i]
-                #name = i 
                 total["spec"] = [name for j in range(len(total))]
                 atoms_spec.append(total)
 
             Df_atom_spec = pd.concat(atoms_spec)
-    #############################
-            #check molecules:
-            print("MOLECULE CHECK")
             molecule_check = np.array([len(c[i].split(" ")) for i in range(len(c))])
             molecules = c[np.argwhere(molecule_check == 2)]
 
@@ -178,7 +250,6 @@ class Prepare_data():
             SpecSemi = np.unique(Df_atom_spec.spec.values)
 
             #check doubles
-            print(SpecSemi)
             mol_doub_check = np.array([int(SpecSemi[j].split(":")[1]) for j in range(len(SpecSemi))])
             mol_doub = SpecSemi[np.argwhere(mol_doub_check == 2)] 
 
@@ -206,37 +277,25 @@ class Prepare_data():
             Df_atom_spec = pd.concat(Df_spec_lst)        
 
 
-    ############################        
-
             x_wu=Df_atom_spec
             sort_x = x_wu.sort_values(by=['z'])
 
-            ## open hdf5 file 
-            #hdf = pd.HDFStore("./file_{}_large_chunks.h5".format(files[file_idx].replace(".","_")))
             
-            output_path = self.params['output_path'] + "/Output_big_slices.h5"
+            output_path = os.path.join(self.params['output_path'], "Output_big_slices.h5")
             hdf = h5py.File(output_path, "w")          
             G1 = hdf.create_group("Group_xyz_Da_spec")
             G1.attrs["columns"] = ["x","y","z","Da","spec"]
             G1.attrs["spec_name_order"] = list(SpecFinal)
-            ##end
 
             sublength_x= abs((max(sort_x['z'])-min(sort_x['z']))/self.params["n_big_slices"])
             print(sublength_x)
             start = min(sort_x['z'])
             end = min(sort_x['z']) +sublength_x
             for i in tqdm(range(self.params["n_big_slices"])):
-                #temp = sort_x.iloc[start:end]
                 print(start)
                 print(end)
-                temp = sort_x[sort_x['z'].between(start, end, inclusive=True)]
-
-                #temp.to_csv('B3_Hi_ent_cubes/{}.csv'.format(i), index=False)
-                #hdf.put("chunk_{}".format(i), temp, format = "table", data_columns= True)
-                ##Put data into hdf5 file
+                temp = sort_x[sort_x['z'].between(start, end, inclusive="both")]
                 G1.create_dataset("chunk_{}".format(i), data = temp.values)
-                ##end
-
                 start += sublength_x
                 end += sublength_x
                 #print(end) 
@@ -247,71 +306,66 @@ class Prepare_data():
           
             
     def get_voxels(self):
-
-        #path = os.getcwd()+"\\file_R5096_64816_BFA.apt_large_chunks.h5"
-        #hdfr = pd.HDFStore(path, mode = "r")
         folder = self.params['output_path']
         for filename in tqdm(os.listdir(folder)):    
-                if (filename.endswith("slices.h5")):
-                    #hdfr = pd.HDFStore(filename, mode = "r")
-                    #hdf = pd.HDFStore("./file_{}_small_chunks.h5".format(filename.replace(".","_")))
-                    hdfr = h5py.File(folder + "/" +filename, "r")
-                    
-                    #output_path = self.params['output_path'] + "/Output_{}_voxels.h5".format(filename.replace(".","_"))
-                    output_path = self.params['output_path'] + "/Output_voxels.h5"
-                    with h5py.File(output_path, "w") as hdfw:
+            if (filename.endswith("slices.h5")):
+                hdfr = h5py.File(folder + "/" +filename, "r")
+                
+                #output_path = self.params['output_path'] + "/Output_{}_voxels.h5".format(filename.replace(".","_"))
+                output_path = self.params['output_path'] + "/Output_voxels.h5"
+                with h5py.File(output_path, "w") as hdfw:
 
-                        Group_r = hdfr.get("Group_xyz_Da_spec")
-                        Group_keys = list(Group_r.keys())
-                        columns_r = list(list(Group_r.attrs.values())[0])
+                    Group_r = hdfr.get("Group_xyz_Da_spec")
+                    Group_keys = list(Group_r.keys())
+                    columns_r = list(list(Group_r.attrs.values())[0])
 
-                        #G1 = hdfw.create_group("Group_sm_vox_xyz_Da_spec")
-                        G1 = hdfw.create_group("0")
-                        prev_attri =list(list(Group_r.attrs.values())[0])
-                        prev_attri.append("vox_file")
-                        G1.attrs["columns"] =  prev_attri
-                        G1.attrs["spec_name_order"] = list(list(Group_r.attrs.values())[1])
+                    #G1 = hdfw.create_group("Group_sm_vox_xyz_Da_spec")
+                    G1 = hdfw.create_group("0")
+                    prev_attri =list(list(Group_r.attrs.values())[0])
+                    prev_attri.append("vox_file")
+                    G1.attrs["columns"] =  prev_attri
+                    G1.attrs["spec_name_order"] = list(list(Group_r.attrs.values())[1])
 
-                        cube_size = self.params["voxel_size"] #2
-                        #file_to_h5 = []
-                        name_sub_file = 0
-                        step = 0
-                        m=0
-                        for key in tqdm(Group_keys):
-                            read_array = np.array(Group_r.get(key))
+                    cube_size = self.params["voxel_size"] #2
+                    #file_to_h5 = []
+                    name_sub_file = 0
+                    step = 0
+                    m=0
+                    for key in tqdm(Group_keys):
+                        read_array = np.array(Group_r.get(key))
 
-                            s= pd.DataFrame(data = read_array, columns =  columns_r)
-                            x_min = round(min(s['x']))
-                            x_max = round(max(s['x']))
-                            y_min = round(min(s['y']))
-                            y_max = round(max(s['y']))
-                            z_min = round(min(s['z']))
-                            z_max = round(max(s['z']))   
-                            p=[]
-                            x=[]
+                        s= pd.DataFrame(data = read_array, columns =  columns_r)
+                        x_min = round(min(s['x']))
+                        x_max = round(max(s['x']))
+                        y_min = round(min(s['y']))
+                        y_max = round(max(s['y']))
+                        z_min = round(min(s['z']))
+                        z_max = round(max(s['z']))   
+                        p=[]
+                        x=[]
 
-                            for i in range(z_min,z_max,cube_size):
-                                #print(i)
-                                cubic = s[s['z'].between(i, i+cube_size, inclusive=True)]
-                                for j in range(y_min,y_max,cube_size):
-                                    p = cubic[cubic['y'].between(j, j+cube_size, inclusive=True)]
-                                    for k in range(x_min, x_max, cube_size):
-                                        x = p[p['x'].between(k,k+cube_size, inclusive=True)]
-                                        if len(x['x'])>20:
-                                            name ='cubes_z{}_x{}_y{}'.format(i,j,k).replace("-","m")
-                                            if step>99999:
-                                                step=0
-                                                m=m+1
-                                                G1 = hdfw.create_group("{}".format(100000*m))
+                        for i in range(z_min,z_max,cube_size):
+                            #print(i)
+                            cubic = s[s['z'].between(i, i+cube_size, inclusive="both")]
+                            for j in range(y_min,y_max,cube_size):
+                                p = cubic[cubic['y'].between(j, j+cube_size, inclusive="both")]
+                                for k in range(x_min, x_max, cube_size):
+                                    x = p[p['x'].between(k,k+cube_size, inclusive="both")]
+                                    if len(x['x'])>20:
+                                        name ='cubes_z{}_x{}_y{}'.format(i,j,k).replace("-","m")
+                                        if step>99999:
+                                            step=0
+                                            m=m+1
+                                            G1 = hdfw.create_group("{}".format(100000*m))
 
-                                            x["vox_file"] = [name_sub_file for n_file in range(len(x))]
-                                            G1.create_dataset("{}".format(name_sub_file), data = x.values)
-                                            name_sub_file = name_sub_file+1
-                                            step=step+1
-                                            #file_to_h5.append("{}".format(name_sub_file))
-                        G1 = hdfw.get("0")
-                        G1.attrs["Total_voxels"]="{}".format(name_sub_file)
-                    hdfr.close()
+                                        x["vox_file"] = [name_sub_file for n_file in range(len(x))]
+                                        G1.create_dataset("{}".format(name_sub_file), data = x.values)
+                                        name_sub_file = name_sub_file+1
+                                        step=step+1
+                                        #file_to_h5.append("{}".format(name_sub_file))
+                    G1 = hdfw.get("0")
+                    G1.attrs["Total_voxels"]="{}".format(name_sub_file)
+                hdfr.close()
 
 
 
