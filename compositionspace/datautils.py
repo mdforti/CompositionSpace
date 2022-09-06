@@ -86,7 +86,7 @@ class DataPreparation:
         FileNotFoundError: describe
         """
         if not os.path.exists(file_name):
-            raise FileNotFoundError("filename does not exist")
+            raise FileNotFoundError(f"filename {file_name} does not exist")
         
         with open(file_name, 'rb') as f:
             dt_type = np.dtype({'names':['x', 'y', 'z', 'm'], 
@@ -109,6 +109,9 @@ class DataPreparation:
         Notes
         -----
         """
+        if not os.path.exists(file_name):
+            raise FileNotFoundError(f"filename {file_name} does not exist")
+
         patterns = re.compile(r'Ion([0-9]+)=([A-Za-z0-9]+).*|Range([0-9]+)=(\d+.\d+) +(\d+.\d+) +Vol:(\d+.\d+) +([A-Za-z:0-9 ]+) +Color:([A-Z0-9]{6})')
         ions = []
         rrngs = []
@@ -129,7 +132,42 @@ class DataPreparation:
         rrngs[['lower','upper','vol']] = rrngs[['lower','upper','vol']].astype(float)
         rrngs[['comp','colour']] = rrngs[['comp','colour']].astype(str)
         return ions, rrngs
-                          
+
+    def read_apt(self, file_name):
+        """
+        Read the apt file 
+        
+        Parameters
+        ----------
+        file_name: string
+            Name of the input file
+        
+        Returns
+        -------
+        pos: np structured array
+            The atom positions and ---- ratio
+        
+        Notes
+        -----
+        Assumptions
+        
+        Examples
+        --------
+        
+        Raises
+        ------
+        FileNotFoundError: describe
+        """
+        if not os.path.exists(file_name):
+            raise FileNotFoundError(f"filename {file_name} does not exist")
+        
+        apt = paraprobe_transcoder.paraprobe_transcoder(file_name)
+        apt.read_cameca_apt()
+        POS = apt.Position
+        MASS = apt.Mass
+        POS_MASS = np.concatenate((POS,MASS),axis = 1)
+        return POS_MASS
+
     def read_apt_to_df(self):
         """
         Read the data 
@@ -150,19 +188,15 @@ class DataPreparation:
 
         for filename in tqdm(os.listdir(self.params["input_path"])):
             if filename.lower().endswith(".pos"):
-                path = os.path.join(folder, filename)            
+                path = os.path.join(self.params["input_path"], filename)            
                 pos = self.read_pos(path)
                 df_POS_MASS = pd.DataFrame({'x':pos['x'],'y': pos['y'],'z': pos['z'],'Da': pos['m']})
                 df_Mass_POS_lst.append(df_POS_MASS)
                 file_name_lst.append(filename)
 
             if filename.endswith(".apt"):
-                path = os.path.join(self.params["input_path"], filename) 
-                apt = paraprobe_transcoder.paraprobe_transcoder(path)
-                apt.read_cameca_apt()
-                POS = apt.Position
-                MASS = apt.Mass
-                POS_MASS = np.concatenate((POS,MASS),axis = 1)
+                path = os.path.join(self.params["input_path"], filename)
+                POS_MASS = self.read_apt(path) 
                 df_POS_MASS = pd.DataFrame(POS_MASS, columns = ["x","y","z","Da"])
                 df_Mass_POS_lst.append(df_POS_MASS)
                 file_name_lst.append(filename)
