@@ -8,7 +8,7 @@ from sklearn.cluster import DBSCAN
 from pyevtk.hl import pointsToVTK
 from pyevtk.hl import gridToVTK
 
-class Postprocess_data():
+class PostprocessData():
     
     def __init__(self,params):
         self.params = params
