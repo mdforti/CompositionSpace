@@ -22,7 +22,6 @@ def get_model(ml_params):
     if(model_name == "DBScan"):
         model =  DBSCAN(eps= self.params["eps"], min_samples= model_params["min_samples"])
         return model       
-    
-    
+        
     else:
         raise ValueError(f"Now implementation is found for the model {model_name}, choose from: {_available_models}")

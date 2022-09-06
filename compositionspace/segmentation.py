@@ -14,8 +14,14 @@ from pyevtk.hl import gridToVTK#, pointsToVTKAsTIN
 
 class CompositionClustering():
     
-    def __init__(self, params):
-        self.params = params
+    def __init__(self, inputfile):
+        if isinstance(inputfile, dict):
+            self.params = inputfile
+        else:
+            with open(inputfile, "r") as fin:
+                params = yaml.safe_load(fin)
+            self.params = params
+        self.version = "1.0.0"
 
     def get_PCA_cumsum(self, vox_ratio_file, vox_file):
 
@@ -41,7 +47,7 @@ class CompositionClustering():
         plt.ylabel("Explained Variance")
         plt.xlabel('Dimensions')
         plt.grid()
-        output_path = self.params['output_path'] + "/PCA_cumsum.png"
+        output_path = os.path.join(self.params["output_path"], "PCA_cumsum.png")
         plt.savefig(output_path)
         plt.show()
         
@@ -79,7 +85,7 @@ class CompositionClustering():
             aics.append(gm.aic(X_train))
             bics.append(gm.bic(X_train))
             
-        output_path = self.params['output_path'] + "/bics_aics.png"
+        output_path = os.path.join(self.params["output_path"], "bics_aics.png")
         plt.plot(n_clusters, aics, "-o",label="AIC")
         plt.plot(n_clusters, bics, "-o",label="BIC")
         plt.legend()
@@ -140,7 +146,9 @@ class CompositionClustering():
         return dic_centroids
 
     
-    def get_composition_cluster_files(self, vox_ratio_file, vox_file, n_components, ml_params):
+    def get_composition_cluster_files(self, vox_ratio_file, vox_file, n_components):
+
+        ml_params = self.params["ml_models"]
         
         with h5py.File(vox_file,"r") as hdf:
             group = hdf.get("Group_sm_vox_xyz_Da_spec")
@@ -179,10 +187,11 @@ class CompositionClustering():
         
         return cluster_lst, ratios
     
-    def get_composition_clusters(self, vox_ratio_file, vox_file, ml_params, outfile):
+    def get_composition_clusters(self, vox_ratio_file, vox_file, outfile):
+        
         n_components = self.params["n_phases"]
-
-        cluster_lst, ratios = self.get_composition_cluster_files(vox_ratio_file, vox_file, n_components, ml_params)
+        ml_params = self.params["ml_models"]
+        cluster_lst, ratios = self.get_composition_cluster_files(vox_ratio_file, vox_file, n_components)
 
         plot_files = []
         for phase in range(len(cluster_lst)):

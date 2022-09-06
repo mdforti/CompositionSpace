@@ -1,17 +1,24 @@
 import pandas as pd
 import os
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py    
 from sklearn.cluster import DBSCAN
 from pyevtk.hl import pointsToVTK
 from pyevtk.hl import gridToVTK
+import yaml
 
-class PostprocessData():
+class DataPostprocess:
     
-    def __init__(self,params):
-        self.params = params
+    def __init__(self, inputfile):
+        if isinstance(inputfile, dict):
+            self.params = inputfile
+        else:
+            with open(inputfile, "r") as fin:
+                params = yaml.safe_load(fin)
+            self.params = params
+        self.version = "1.0.0"
 
     def get_post_centroids(self, voxel_centroid_phases_files, cluster_id):
         
@@ -43,12 +50,12 @@ class PostprocessData():
             Df_centroids = Phase_cent_df.copy()
             Df_centroids_no_files = Df_centroids.drop(['file_name'] , axis=1)
             files = Df_centroids['file_name']
-            files.values
 
-            return Df_centroids_no_files, Df_centroids, Phase_columns
+        return Df_centroids_no_files, Df_centroids, Phase_columns
 
         
-    def DBSCAN_clustering(self, voxel_centroid_phases_files, cluster_id, eps, min_samples,plot= False, plot3d = False, save =False):
+    def DBSCAN_clustering(self, voxel_centroid_phases_files, cluster_id, 
+        eps, min_samples,plot= False, plot3d = False, save =False):
         """
         Get individual clusters or precipitates corresponding to each phase/ chemical domain.
         DBSCAN is applied on the centroids of the voxels helping to remove noisy voxels around clusters.
@@ -80,8 +87,8 @@ class PostprocessData():
         -----
         input is taken from composition space based segmentation of phases.
         """        
-        #OutFile_path = self.params['output_path'] 
-        #Voxel_centroid_phases_files = self.params['output_path'] +"/Output_voxel_cetroids_phases.h5"
+        eps = self.params["ml_models"]["DBScan"]["eps"]
+        min_samples = self.params["ml_models"]["DBScan"]["min_samples"]
 
         Df_centroids_no_files, Df_centroids, Phase_columns = self.get_post_centroids( voxel_centroid_phases_files ,cluster_id)
 
