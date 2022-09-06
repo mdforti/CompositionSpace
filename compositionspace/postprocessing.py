@@ -13,14 +13,14 @@ class PostprocessData():
     def __init__(self,params):
         self.params = params
 
-    def get_post_centroids(self,Voxel_centroid_phases_files, cluster_id):
+    def get_post_centroids(self, voxel_centroid_phases_files, cluster_id):
         
         """
         Reads the voxel centroids for a phase  
 
         Parameters
         ----------
-        Voxel_centroid_phases_files : str, Voxel cetroids corresponding to each phase
+        voxel_centroid_phases_files : str, Voxel cetroids corresponding to each phase
         cluster_id: int, phase id in Voxel_centroid_phases_files
 
         Returns
@@ -34,7 +34,7 @@ class PostprocessData():
         """
 
 
-        with h5py.File(Voxel_centroid_phases_files , "r") as hdfr:
+        with h5py.File(voxel_centroid_phases_files , "r") as hdfr:
             group = cluster_id
             Phase_arr =  np.array(hdfr.get(f"{group}/{group}"))
             Phase_columns = list(list(hdfr.get(f"{group}").attrs.values())[0])
@@ -48,7 +48,7 @@ class PostprocessData():
             return Df_centroids_no_files, Df_centroids, Phase_columns
 
         
-    def DBSCAN_clustering(self, cluster_id, eps, min_samples,plot= False, plot3d = False, save =False):
+    def DBSCAN_clustering(self, voxel_centroid_phases_files, cluster_id, eps, min_samples,plot= False, plot3d = False, save =False):
         """
         Get individual clusters or precipitates corresponding to each phase/ chemical domain.
         DBSCAN is applied on the centroids of the voxels helping to remove noisy voxels around clusters.
@@ -80,10 +80,10 @@ class PostprocessData():
         -----
         input is taken from composition space based segmentation of phases.
         """        
-        OutFile_path = self.params['output_path'] 
-        Voxel_centroid_phases_files = self.params['output_path'] +"/Output_voxel_cetroids_phases.h5"
+        #OutFile_path = self.params['output_path'] 
+        #Voxel_centroid_phases_files = self.params['output_path'] +"/Output_voxel_cetroids_phases.h5"
 
-        Df_centroids_no_files, Df_centroids, Phase_columns = self.get_post_centroids( Voxel_centroid_phases_files ,cluster_id)
+        Df_centroids_no_files, Df_centroids, Phase_columns = self.get_post_centroids( voxel_centroid_phases_files ,cluster_id)
 
         db = DBSCAN(eps=eps, min_samples= min_samples).fit(Df_centroids_no_files.values) #eps=5., min_samples= 35
         core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
