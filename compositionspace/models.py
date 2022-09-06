@@ -8,7 +8,7 @@ def get_model(ml_params):
     get machine learning model for clustering
     """
     model_name = ml_params["name"]
-    model_params = ml_params["params"]
+    model_params = ml_params[model_name]
     _available_models = ["randomforest"]
 
     if(model_name == "randomforest"):

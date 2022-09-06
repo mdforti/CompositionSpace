@@ -55,7 +55,7 @@ class DataPostprocess:
 
         
     def DBSCAN_clustering(self, voxel_centroid_phases_files, cluster_id, 
-        eps, min_samples,plot= False, plot3d = False, save =False):
+        plot= False, plot3d = False, save =False):
         """
         Get individual clusters or precipitates corresponding to each phase/ chemical domain.
         DBSCAN is applied on the centroids of the voxels helping to remove noisy voxels around clusters.
@@ -107,41 +107,31 @@ class DataPostprocess:
 
         for i in np.unique(labels):
             if i !=-1:
-
                 cl_idx =np.argwhere(labels==i).flatten()
                 cl_cent=Df_centroids_no_files.iloc[cl_idx]
                 cl_cent["ID"] = [i]*len(cl_cent)
                 cluster_combine_lst.append(cl_cent)
 
-
         if plot3d == True: 
-            OutFile = OutFile_path +"/Output_DBSCAN_segmentation_phase" + f"{cluster_id}"
+            OutFile = os.path.join(self.params["output_path"], f"Output_DBSCAN_segmentation_phase{cluster_id}")
             Df_comb = pd.concat(cluster_combine_lst)
             image = Df_comb.values
-            FILE_PATH1 = OutFile
             x = np.ascontiguousarray(image[:,0])
             y= np.ascontiguousarray(image[:,1])
             z = np.ascontiguousarray(image[:,2])
             label = np.ascontiguousarray( image[:,3])
-            pointsToVTK(FILE_PATH1,x,y,z, data = {"label" : label}  )
-
+            pointsToVTK(OutFile,x,y,z, data = {"label" : label}  )
 
         if save == True:
-            OutFile = OutFile_path + f"/Output_DBSCAN_segmentation_phase_{cluster_id}.h5"
+            OutFile = OutFile_path + f"Output_DBSCAN_segmentation_phase_{cluster_id}.h5"
             with h5py.File(OutFile, "w") as hdfw:
-
                 G = hdfw.create_group(f"{cluster_id}")
                 G.attrs["columns"] = Phase_columns
-
                 for i in tqdm(np.unique(labels)):
                     if i !=-1:
-
                         cl_idx =np.argwhere(labels==i).flatten()
                         cl_cent=Df_centroids.iloc[cl_idx]
-                        #cluster_combine_lst.append(cl_cent)
                         G.create_dataset("{}".format(i), data = cl_cent.values)
-                        #l_cent.to_csv("cl_D3_Zr_{}.csv".format(i), index =False)
-
 
 
     

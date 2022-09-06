@@ -4,7 +4,8 @@ n_big_slices: 10
 voxel_size: 2
 bics_clusters: 10
 n_phases: 3
-ml_models: 
+ml_models:
+   name: GaussianMixture 
    GaussianMixture:
       n_components: 3
       max_iter: 100000
@@ -13,5 +14,5 @@ ml_models:
       max_depth: 0
       n_estimators: 0
    DBScan:
-      eps:
-      min_samples:
+      eps: 5
+      min_samples: 50

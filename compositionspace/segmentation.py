@@ -11,6 +11,7 @@ from tqdm.notebook import tqdm
 import os
 from pyevtk.hl import pointsToVTK
 from pyevtk.hl import gridToVTK#, pointsToVTKAsTIN
+import yaml
 
 class CompositionClustering():
     
