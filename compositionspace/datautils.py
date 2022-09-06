@@ -1,28 +1,30 @@
-import compositionspace.paraprobe_transcoder as paraprobe_transcoder
 
 import pandas as pd
 import re
 import os
+import yaml
 from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
 import pickle
 import time
-#import paraprobe_transcoder
 import h5py
 import warnings
-from sklearn.decomposition import PCA
-from sklearn.mixture import GaussianMixture
+import compositionspace.paraprobe_transcoder as paraprobe_transcoder
 
 #really check this!
 pd.options.mode.chained_assignment = None
 
 class DataPreparation:
-    def __init__(self, params):
-        self.params = params
+    def __init__(self, inputfile):
+        if isinstance(inputfile, dict):
+            self.params = inputfile
+        else:
+            with open(inputfile, "r") as fin:
+                params = yaml.safe_load(fin)
+            self.params = params
         self.version = "1.0.0"
-
 
     def label_ions(self, pos, rrngs):
         pos['comp'] = ''
@@ -128,7 +130,7 @@ class DataPreparation:
         rrngs[['comp','colour']] = rrngs[['comp','colour']].astype(str)
         return ions, rrngs
                           
-    def read_apt_to_df(self, folder):
+    def read_apt_to_df(self):
         """
         Read the data 
         
@@ -146,7 +148,7 @@ class DataPreparation:
         ions = None 
         rrngs = None
 
-        for filename in tqdm(os.listdir(folder)):
+        for filename in tqdm(os.listdir(self.params["input_path"])):
             if filename.lower().endswith(".pos"):
                 path = os.path.join(folder, filename)            
                 pos = self.read_pos(path)
@@ -155,7 +157,7 @@ class DataPreparation:
                 file_name_lst.append(filename)
 
             if filename.endswith(".apt"):
-                path = os.path.join(folder, filename) 
+                path = os.path.join(self.params["input_path"], filename) 
                 apt = paraprobe_transcoder.paraprobe_transcoder(path)
                 apt.read_cameca_apt()
                 POS = apt.Position
@@ -166,14 +168,14 @@ class DataPreparation:
                 file_name_lst.append(filename)
 
             if filename.lower().endswith(".rrng"):
-                path = os.path.join(folder, filename) 
+                path = os.path.join(self.params["input_path"], filename) 
                 ions,rrngs = self.read_rrng(path)
                 
         return (df_Mass_POS_lst, file_name_lst, ions, rrngs) 
 
 
 
-    def chunkify_apt_df(self, folder):
+    def chunkify_apt_df(self):
         """
         Cut the data into specified portions
         
@@ -187,7 +189,7 @@ class DataPreparation:
         -----
         """
         #df_lst, files, ions, rrngs= read_apt_to_df(folder)
-        df_lst, files, ions, rrngs= self.read_apt_to_df(self.params["input_path"])
+        df_lst, files, ions, rrngs= self.read_apt_to_df()
 
         filestrings = []
         prefix = self.params['output_path']
@@ -301,10 +303,11 @@ class DataPreparation:
 
         self.voxel_files = filestrings
                     
-    def calculate_voxel_composition(self, small_chunk_file_name, outfilename="3Vox_ratios_filenames_num_MR_Grp.h5"):
+    def calculate_voxel_composition(self, fileindex=0, outfilename="3Vox_ratios_filenames_num_MR_Grp.h5"):
         """
         This works only a single filename; check
         """
+        small_chunk_file_name = self.voxel_files[fileindex]
         hdf_sm_r = h5py.File(small_chunk_file_name, "r")
         group = hdf_sm_r.get("0")
             
