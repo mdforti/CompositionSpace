@@ -1,5 +1,5 @@
-input_path: data
-output_path: output
+input_path: tests/data
+output_path: tests/output
 n_big_slices: 10
 voxel_size: 2
 bics_clusters: 10

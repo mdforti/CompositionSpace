@@ -252,8 +252,8 @@ class CompositionClustering():
                 
                 image = phase_cent_df.values
                 
-                file_path = self.voxel_centroid_output_file + f"_{group}" + ".vtu"
-                vtk_files.append(file_path)
+                file_path = self.voxel_centroid_output_file + f"_{group}"
+                vtk_files.append(file_path + ".vtu")
 
                 x = np.ascontiguousarray(image[:,0])
                 y= np.ascontiguousarray(image[:,1])
