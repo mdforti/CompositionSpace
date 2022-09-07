@@ -186,7 +186,8 @@ class DataPreparation:
         ions = None 
         rrngs = None
 
-        for filename in tqdm(os.listdir(self.params["input_path"])):
+        pbar = tqdm(os.listdir(self.params["input_path"]), desc="Reading files")
+        for filename in pbar:
             if filename.lower().endswith(".pos"):
                 path = os.path.join(self.params["input_path"], filename)            
                 pos = self.read_pos(path)
@@ -254,7 +255,8 @@ class DataPreparation:
             start = min(sorted_df['z'])
             end = min(sorted_df['z']) + sublength_x
             
-            for i in tqdm(range(self.params["n_big_slices"])):
+            pbar = tqdm(range(self.params["n_big_slices"]), desc="Creating chunks")
+            for i in pbar:
                 temp = sorted_df[sorted_df['z'].between(start, end, inclusive="both")]
                 group1.create_dataset("chunk_{}".format(i), data = temp.values)
                 start += sublength_x
@@ -302,7 +304,8 @@ class DataPreparation:
                 step = 0
                 m=0
 
-                for key in tqdm(group_keys):
+                pbar = tqdm(group_keys, desc="Getting Voxels")
+                for key in pbar:
                     read_array = np.array(group_r.get(key))
                     s= pd.DataFrame(data = read_array, columns =  columns_r)
                     x_min = round(min(s['x']))
@@ -341,66 +344,73 @@ class DataPreparation:
         """
         This works only a single filename; check
         """
-        small_chunk_file_name = self.voxel_files[fileindex]
-        hdf_sm_r = h5py.File(small_chunk_file_name, "r")
-        group = hdf_sm_r.get("0")
+        vox_ratio_files = []
+
+        for voxel_file in self.voxel_files:
+            outfilename = voxel_file.replace("small_chunk", "vox_ratio")
+            vox_ratio_files.append(outfilename)
+            small_chunk_file_name = self.voxel_files[fileindex]
+            hdf_sm_r = h5py.File(small_chunk_file_name, "r")
+            group = hdf_sm_r.get("0")
+                
+            #SRM: changed to indice 2 for the first one. Please check.
+            total_voxels =list(list(group.attrs.values())[2])
+            spec_lst_len = len(list(list(group.attrs.values())[2]))
+
+            items = list(hdf_sm_r.items())
+            item_lst = []
+            ### CHECK THESE NUMBERS!
+            for item in range(len(items)):
+                item_lst.append([100000*(item), 100000*(item+1)])
+            item_lst = np.array(item_lst)
             
-        #SRM: changed to indice 2 for the first one. Please check.
-        total_voxels =list(list(group.attrs.values())[2])
-        spec_lst_len = len(list(list(group.attrs.values())[2]))
-
-        items = list(hdf_sm_r.items())
-        item_lst = []
-        ### CHECK THESE NUMBERS!
-        for item in range(len(items)):
-            item_lst.append([100000*(item), 100000*(item+1)])
-        item_lst = np.array(item_lst)
-        
-        
-        total_voxels_int =""
-        for number in total_voxels:
-            total_voxels_int = total_voxels_int + number
-
-        total_voxels_int = int(total_voxels_int)
-
-        files = [file_num for file_num in range(total_voxels_int)]
-        
-        
-        spec_names =  np.arange(spec_lst_len)
-        dic_ratios = {}
-        for spec_name in spec_names:
-            dic_ratios["{}".format(spec_name)] = []
-
-        dic_ratios["Total_no"]=[]
-        dic_ratios["file_name"]=[]
-        dic_ratios["vox"] = []
-
-        ratios = []
-        f_count = 0
-        for filename in tqdm(files):
-            group = np.min(item_lst[[filename in range(j[0],j[1]) for j in item_lst]])
-            arr = np.array(hdf_sm_r.get("{}/{}".format(group,filename))[:,4])
-            N_x = len(arr)
-
-            for spec in (spec_names):
-                ratio = (len(np.argwhere(arr==spec)))/N_x
-                dic_ratios["{}".format(spec)].append(ratio)
-
-            dic_ratios["file_name"].append(filename)
-            dic_ratios["vox"].append(f_count)
-            dic_ratios["Total_no"].append(N_x)
-            f_count = f_count+1
             
-        df = pd.DataFrame.from_dict(dic_ratios)
+            total_voxels_int =""
+            for number in total_voxels:
+                total_voxels_int = total_voxels_int + number
 
-        
-        with h5py.File(outfilename, "w") as hdfw:
-            hdfw.create_dataset("vox_ratios", data =df.drop("file_name", axis = 1).values )
-            hdfw.attrs["what"] = ["All the Vox ratios for a given APT smaple"]
-            hdfw.attrs["howto_Group_name"] = ["Group_sm_vox_xyz_Da_spec/"]
-            hdfw.attrs["columns"]= ['0.0', '1.0', '2.0', '3.0', '4.0', 'Total_no', 'vox']
+            total_voxels_int = int(total_voxels_int)
 
-        hdf_sm_r.close()
+            files = [file_num for file_num in range(total_voxels_int)]
+            
+            
+            spec_names =  np.arange(spec_lst_len)
+            dic_ratios = {}
+            for spec_name in spec_names:
+                dic_ratios["{}".format(spec_name)] = []
+
+            dic_ratios["Total_no"]=[]
+            dic_ratios["file_name"]=[]
+            dic_ratios["vox"] = []
+
+            ratios = []
+            f_count = 0
+            pbar = tqdm(files, desc="Calculating voxel composition")
+            for filename in pbar:
+                group = np.min(item_lst[[filename in range(j[0],j[1]) for j in item_lst]])
+                arr = np.array(hdf_sm_r.get("{}/{}".format(group,filename))[:,4])
+                N_x = len(arr)
+
+                for spec in (spec_names):
+                    ratio = (len(np.argwhere(arr==spec)))/N_x
+                    dic_ratios["{}".format(spec)].append(ratio)
+
+                dic_ratios["file_name"].append(filename)
+                dic_ratios["vox"].append(f_count)
+                dic_ratios["Total_no"].append(N_x)
+                f_count = f_count+1
+                
+            df = pd.DataFrame.from_dict(dic_ratios)
+
+            
+            with h5py.File(outfilename, "w") as hdfw:
+                hdfw.create_dataset("vox_ratios", data =df.drop("file_name", axis = 1).values )
+                hdfw.attrs["what"] = ["All the Vox ratios for a given APT smaple"]
+                hdfw.attrs["howto_Group_name"] = ["Group_sm_vox_xyz_Da_spec/"]
+                hdfw.attrs["columns"]= ['0.0', '1.0', '2.0', '3.0', '4.0', 'Total_no', 'vox']
+
+            hdf_sm_r.close()
+        self.voxel_ratio_files = vox_ratio_files
     
     
 
