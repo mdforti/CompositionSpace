@@ -12,6 +12,7 @@ import os
 from pyevtk.hl import pointsToVTK
 from pyevtk.hl import gridToVTK#, pointsToVTKAsTIN
 import yaml
+import pyvista as pv
 
 class CompositionClustering():
     
@@ -78,7 +79,8 @@ class CompositionClustering():
         
         n_clusters=list(range(1,self.params["bics_clusters"]))
         
-        for n_cluster in tqdm(n_clusters):
+        pbar = tqdm(n_clusters, desc="Clustering")
+        for n_cluster in pbar:
             gm = GaussianMixture(n_components=n_cluster,verbose=0)
             gm.fit(X_train)
             y_pred=gm.predict(X_train)
@@ -136,7 +138,7 @@ class CompositionClustering():
             dic_centroids["file_name"] = []
             df_centroids = pd.DataFrame(columns=['x', 'y', 'z','filename'])
             
-            for filename in tqdm(files_arr):
+            for filename in files_arr:
                 group = np.min(item_lst[[filename in range(j[0],j[1]) for j in item_lst]])
                 xyz_Da_spec_atoms = np.array(hdf.get("{}/{}".format(group, filename)))
                 x, y, z = self.calculate_centroid(xyz_Da_spec_atoms)
@@ -183,13 +185,15 @@ class CompositionClustering():
         for length in sorted_len_arr:
             cluster_lst_sort.append(cluster_lst[np.argwhere(len_arr == length)[0,0]])
 
-        print([len(x) for x in cluster_lst_sort])
+        #print([len(x) for x in cluster_lst_sort])
         cluster_lst = cluster_lst_sort
         
         return cluster_lst, ratios
     
-    def get_composition_clusters(self, vox_ratio_file, vox_file, outfile):
+    def get_composition_clusters(self, vox_ratio_file, vox_file):
         
+        outfile = vox_ratio_file.replace("vox_ratio", "centroid_ouput")
+
         n_components = self.params["n_phases"]
         ml_params = self.params["ml_models"]
         cluster_lst, ratios = self.get_composition_cluster_files(vox_ratio_file, vox_file, n_components)
@@ -233,28 +237,38 @@ class CompositionClustering():
                 CentroidsDic = self.get_voxel_centroid(vox_file, plot_files_group[cluster_file_id])
                 G.create_dataset(f"{cluster_file_id}", data = pd.DataFrame.from_dict(CentroidsDic).values)
 
-    """
-    def plot3d(self):
-        
-        OutFile = self.params['output_path'] + "/Output_voxel_cetroids_phases"
+        self.voxel_centroid_output_file = outfile
 
-        Voxel_centroid_phases_files = self.params['output_path'] + "/Output_voxel_cetroids_phases.h5"
+    
+    def generate_plots(self):
 
-        with h5py.File(Voxel_centroid_phases_files , "r") as hdfr:
-            
+        vtk_files = []
+        with h5py.File(self.voxel_centroid_output_file, "r") as hdfr:            
             groups =list(hdfr.keys())
             for group in range(len(groups)-2):
-                Phase_arr =  np.array(hdfr.get(f"{group}/{group}"))
-                Phase_columns = list(list(hdfr.get(f"{group}").attrs.values())[0])
-                Phase_cent_df =pd.DataFrame(data=Phase_arr, columns=Phase_columns)
+                phase_arr =  np.array(hdfr.get(f"{group}/{group}"))
+                phase_columns = list(list(hdfr.get(f"{group}").attrs.values())[0])
+                phase_cent_df =pd.DataFrame(data=phase_arr, columns=phase_columns)
                 
-                image = Phase_cent_df.values
-                FILE_PATH1 = OutFile + f"_{group}"
-                print(FILE_PATH1)
+                image = phase_cent_df.values
+                
+                file_path = self.voxel_centroid_output_file + f"_{group}" + ".vtu"
+                vtk_files.append(file_path)
+
                 x = np.ascontiguousarray(image[:,0])
                 y= np.ascontiguousarray(image[:,1])
                 z = np.ascontiguousarray(image[:,2])
                 label = np.ascontiguousarray( image[:,3])
-                pointsToVTK(FILE_PATH1,x,y,z, data = {"label" : label}  )
-    """
+
+                pointsToVTK(file_path, x, y, z, data = {"label" : label}  )
+        self.vtk_files = vtk_files
+
+    
+    def plot3d(self, **kwargs):
+        self.generate_plots()
+        for file in self.vtk_files:
+            grid = pv.read(file)
+            grid.plot(**kwargs)
+
+
 

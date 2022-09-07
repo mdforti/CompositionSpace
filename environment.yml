@@ -13,3 +13,6 @@ dependencies:
   - pyevtk
   - ipywidgets
   - pyyaml
+  - ipyvtklink
+  - pyvista
+  - ipywidgets
