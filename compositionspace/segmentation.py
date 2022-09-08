@@ -268,7 +268,7 @@ class CompositionClustering():
         self.generate_plots()
         for file in self.vtk_files:
             grid = pv.read(file)
-            grid.plot(**kwargs)
+            grid.plot(**kwargs, jupyter_backend="panel")
 
 
 
