@@ -12,3 +12,7 @@ dependencies:
   - tqdm
   - pyevtk
   - ipywidgets
+  - pyyaml
+  - ipyvtklink
+  - pyvista
+  - ipywidgets
