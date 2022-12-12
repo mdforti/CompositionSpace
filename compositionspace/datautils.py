@@ -59,6 +59,39 @@ class DataPreparation:
         count_Atom= len(atom_total['Da'])   
         return atom_total, count_Atom  
 
+    def atom_filter(self, x, atom_range):
+        
+        """
+        Get a list of atom species and their counts
+        
+        Parameters
+        ----------
+        
+        Returns
+        -------
+        
+        Notes
+        -----
+        Assuming all the data
+        """
+        atom_total = []
+        x_arr = x.values
+        mass = x_arr[:,-1] 
+        x_columns = x.columns
+        
+        for i in range(len(atom_range)):
+            low_bound = atom_range['lower'][i]
+            upper_bound =  atom_range['upper'][i]
+            
+            id_ = np.where(np.logical_and(mass>=low_bound, mass<=upper_bound))                      
+            atom = x_arr[id_]           
+            atom_total.append(atom)
+             
+        atom_total = tuple(atom_total)
+        atom_total = np.vstack(atom_total)
+        atom_total = pd.DataFrame(atom_total, columns = x_columns)
+        count_atom= len(atom_total)
+        return atom_total, count_atom        
 
     def read_pos(self, file_name):
         """
