@@ -25,6 +25,8 @@ class DataPreparation:
                 params = yaml.safe_load(fin)
             self.params = params
         self.version = "1.0.0"
+        if not os.path.exists(self.params['output_path']):
+            os.mkdir(self.params['output_path'])
 
     def label_ions(self, pos, rrngs):
         pos['comp'] = ''
