@@ -37,6 +37,9 @@ class CompositionClustering():
             ratios_columns = list(list(hdfr.attrs.values())[0])
             group_name = list(list(hdfr.attrs.values())[1])
 
+        print(len(ratios))
+        print((ratios_columns))
+
         ratios = pd.DataFrame(data=ratios, columns=ratios_columns)   
 
         X_train=ratios.drop(['Total_no','vox'], axis=1)
@@ -190,10 +193,8 @@ class CompositionClustering():
         
         return cluster_lst, ratios
     
-    def get_composition_clusters(self, vox_ratio_file, vox_file):
+    def get_composition_clusters(self, vox_ratio_file, vox_file, outfile="vox_centroid_file.h5"):
         
-        outfile = vox_ratio_file.replace("vox_ratio", "centroid_ouput")
-
         n_components = self.params["n_phases"]
         ml_params = self.params["ml_models"]
         cluster_lst, ratios = self.get_composition_cluster_files(vox_ratio_file, vox_file, n_components)
