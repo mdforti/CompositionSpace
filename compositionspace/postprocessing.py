@@ -113,7 +113,6 @@ class DataPostprocess:
                 cluster_combine_lst.append(cl_cent)
 
         if plot3d == True: 
-            OutFile = os.path.join(self.params["output_path"], f"Output_DBSCAN_segmentation_phase{cluster_id}")
             Df_comb = pd.concat(cluster_combine_lst)
             image = Df_comb.values
             x = np.ascontiguousarray(image[:,0])
@@ -123,7 +122,7 @@ class DataPostprocess:
             pointsToVTK(OutFile,x,y,z, data = {"label" : label}  )
 
         if save == True:
-            OutFile = OutFile_path + f"Output_DBSCAN_segmentation_phase_{cluster_id}.h5"
+            OutFile = os.path.join(self.params["output_path"], f"Output_DBSCAN_segmentation_phase{cluster_id}")
             with h5py.File(OutFile, "w") as hdfw:
                 G = hdfw.create_group(f"{cluster_id}")
                 G.attrs["columns"] = Phase_columns
