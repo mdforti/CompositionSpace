@@ -1,9 +1,46 @@
 # CompositionSpace
 
+CompositionSpace is a python library for analysis of TEM data.
+
 ## Installation
 
-It is highly recommended to install within a conda environment.
+### Installation using [Conda](https://anaconda.org/)
 
+It is **strongly** recommended to install and use `calphy` within a conda environment. To see how you can install conda see [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/).
 
+Once a conda distribution is available, the following steps will help set up an environment to use `compositionspace`. First step is to clone the repository.
 
+```
+https://github.com/Alaukiksaxena/CompositionSpaceNFDI.git
+```
 
+After cloning, an environment can be created from the included file-
+
+```
+cd CompositionSpaceNFDI
+conda env create -f environment.yml
+```
+
+Activate the environment,
+
+```
+conda activate compspace
+```
+
+then, install `compositionspace` using,
+
+```
+python setup.py install
+```
+The environment is now set up to run calphy.
+
+## Examples
+
+For an example of the complete workflow using `compositionspace`, see `example/full_workflow.ipynb`.
+
+The provided dataset is a small one for testing purposes, which is also accessible here:
+
+Ceguerra, AV (2021) Supplementary material: APT test cases.
+Available at http://dx.doi.org/10.25833/3ge0-y420
+
+## Documentation
