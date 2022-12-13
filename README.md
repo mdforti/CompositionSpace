@@ -11,13 +11,13 @@ It is **strongly** recommended to install and use `calphy` within a conda enviro
 Once a conda distribution is available, the following steps will help set up an environment to use `compositionspace`. First step is to clone the repository.
 
 ```
-https://github.com/Alaukiksaxena/CompositionSpaceNFDI.git
+https://github.com/eisenforschung/CompositionSpace.git
 ```
 
 After cloning, an environment can be created from the included file-
 
 ```
-cd CompositionSpaceNFDI
+cd CompositionSpace
 conda env create -f environment.yml
 ```
 
