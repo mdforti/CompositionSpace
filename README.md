@@ -44,3 +44,5 @@ Ceguerra, AV (2021) Supplementary material: APT test cases.
 Available at http://dx.doi.org/10.25833/3ge0-y420
 
 ## Documentation
+
+Documentation is available [here](https://compositionspace.readthedocs.io/en/latest/).
