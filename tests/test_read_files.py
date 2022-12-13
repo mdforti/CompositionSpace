@@ -24,11 +24,11 @@ def test_file_df():
 def test_chunkify():
     data = DataPreparation("tests/experiment_params.yaml")
     data.chunkify_apt_df()
-    assert os.path.exists("tests/output/file_R31_06365-v02_pos_large_chunks_arr.h5") == True
+    assert os.path.exists(data.chunk_files[0]) == True
 
 def test_voxelise():
     data = DataPreparation("tests/experiment_params.yaml")
     data.chunkify_apt_df()
     data.get_voxels()
     data.calculate_voxel_composition()
-    assert os.path.exists("tests/output/file_R31_06365-v02_pos_vox_ratios_arr.h5") == True
+    assert os.path.exists(data.voxel_ratio_file) == True
