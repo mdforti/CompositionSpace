@@ -1,6 +1,6 @@
 # CompositionSpace
 
-CompositionSpace is a python library for analysis of TEM data.
+CompositionSpace is a python library for analysis of APT data.
 
 ## Installation
 
