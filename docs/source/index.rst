@@ -11,13 +11,19 @@ CompositionSpace is a python library for analysis of APT data.
 Installation
 ~~~~~~~~~~~~
 
+**Installation using pip**
+
+`CompositionSpace` can be installed using::
+
+   pip install compositionspace
+
 **Installation using Conda**
 
 It is **strongly** recommended to install and use `CompositionSpace` within a `conda environment <https://anaconda.org/>`_. To see how you can install conda see `here <https://docs.conda.io/projects/conda/en/latest/user-guide/install>`_.
 
 Once a conda distribution is available, the following steps will help set up an environment to use `compositionspace`. First step is to clone the repository::
 
-   https://github.com/eisenforschung/CompositionSpace.git
+   git clone https://github.com/eisenforschung/CompositionSpace.git
 
 After cloning, an environment can be created from the included file::
 
