@@ -16,3 +16,4 @@ dependencies:
   - ipyvtklink
   - pyvista
   - ipywidgets
+  - panel
