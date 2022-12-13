@@ -9,4 +9,4 @@ Available at http://dx.doi.org/10.25833/3ge0-y420
 
 .. toctree::
     
-    examples/full_workflow
+    example/full_workflow

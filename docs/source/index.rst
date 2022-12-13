@@ -53,7 +53,7 @@ API reference
 ~~~~~~~~~~~~~
 
 .. toctree::
-   compositionspace
+   modules
 
 Indices and tables
 ==================
