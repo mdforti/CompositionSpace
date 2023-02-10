@@ -6,7 +6,6 @@ import yaml
 from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
-from numba import jit
 import pickle
 import time
 import h5py
