@@ -28,7 +28,8 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     description="APT analysis tools",
-    install_requires=['matplotlib', 'pytest','tqdm'],
+    install_requires = ['numpy', 'matplotlib', 'pandas', 'h5py', 'scikit-learn',
+    'tqdm', 'pyevtk', 'pyyaml', 'pyvista'],
     #license="GNU General Public License v3",
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -40,7 +41,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='',
-    version='0.0.4',
+    version='0.0.8',
     zip_safe=False,
     #entry_points={
     #    'console_scripts': [

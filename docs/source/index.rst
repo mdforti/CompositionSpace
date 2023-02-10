@@ -6,10 +6,16 @@
 CompositionSpace
 ================
 
-CompositionSpace is a python library for analysis of TEM data.
+CompositionSpace is a python library for analysis of APT data.
 
 Installation
 ~~~~~~~~~~~~
+
+**Installation using pip**
+
+`CompositionSpace` can be installed using::
+
+   pip install compositionspace
 
 **Installation using Conda**
 
@@ -17,12 +23,12 @@ It is **strongly** recommended to install and use `CompositionSpace` within a `c
 
 Once a conda distribution is available, the following steps will help set up an environment to use `compositionspace`. First step is to clone the repository::
 
-   https://github.com/Alaukiksaxena/CompositionSpaceNFDI.git
+   git clone https://github.com/eisenforschung/CompositionSpace.git
 
 After cloning, an environment can be created from the included file::
 
 
-   cd CompositionSpaceNFDI
+   cd CompositionSpace
    conda env create -f environment.yml
 
 
