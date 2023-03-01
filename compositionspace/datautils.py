@@ -27,7 +27,7 @@ class DataPreparation:
         if not os.path.exists(self.params['output_path']):
             os.mkdir(self.params['output_path'])
 
-    def label_ions(self, pos, rrngs):
+    def get_label_ions(self, pos, rrngs):
         pos['comp'] = ''
         pos['colour'] = '#FFFFFF'
         pos['nature'] = ''
@@ -38,27 +38,6 @@ class DataPreparation:
         
         return pos
 
-    def atom_filter(self, x, atom_range):
-        """
-        Get a list of atom species and their counts
-        
-        Parameters
-        ----------
-        
-        Returns
-        -------
-        
-        Notes
-        -----
-        Assuming all the data
-        """
-        dfs = []
-        for i in range(len(atom_range)):
-            atom = x[x['Da'].between(atom_range['lower'][i], atom_range['upper'][i], inclusive="both")]
-            dfs.append(atom)
-        atom_total = pd.concat(dfs)
-        count_Atom= len(atom_total['Da'])   
-        return atom_total, count_Atom  
 
     def atom_filter(self, x, atom_range):
         
@@ -94,7 +73,7 @@ class DataPreparation:
         count_atom= len(atom_total)
         return atom_total, count_atom        
 
-    def read_pos(self, file_name):
+    def get_pos(self, file_name):
         """
         Read the pos file 
         
@@ -130,7 +109,7 @@ class DataPreparation:
         
         return pos
 
-    def read_rrng(self, file_name):
+    def get_rrng(self, file_name):
         """
         Read the data 
         
@@ -167,7 +146,7 @@ class DataPreparation:
         rrngs[['comp','colour']] = rrngs[['comp','colour']].astype(str)
         return ions, rrngs
 
-    def read_apt(self, file_name):
+    def get_apt(self, file_name):
         """
         Read the apt file 
         
@@ -202,7 +181,7 @@ class DataPreparation:
         POS_MASS = np.concatenate((POS,MASS),axis = 1)
         return POS_MASS
 
-    def read_apt_to_df(self):
+    def get_apt_dataframe(self):
         """
         Read the data 
         
@@ -222,29 +201,42 @@ class DataPreparation:
 
         pbar = tqdm(os.listdir(self.params["input_path"]), desc="Reading files")
         for filename in pbar:
+            
+            if filename.endswith(".POS"):
+                #print(filename)
+                path = os.path.join(self.params["input_path"], filename)
+                pos = self.get_pos(path)
+                df_POS_MASS = pd.DataFrame({'x':pos['x'],'y': pos['y'],'z': pos['z'],'Da': pos['m']})
+                df_Mass_POS_lst.append(df_POS_MASS)
+                file_name_lst.append(filename)
+            
             if filename.lower().endswith(".pos"):
                 path = os.path.join(self.params["input_path"], filename)            
-                pos = self.read_pos(path)
+                pos = self.get_pos(path)
                 df_POS_MASS = pd.DataFrame({'x':pos['x'],'y': pos['y'],'z': pos['z'],'Da': pos['m']})
                 df_Mass_POS_lst.append(df_POS_MASS)
                 file_name_lst.append(filename)
 
             if filename.endswith(".apt"):
                 path = os.path.join(self.params["input_path"], filename)
-                POS_MASS = self.read_apt(path) 
+                POS_MASS = self.get_apt(path) 
                 df_POS_MASS = pd.DataFrame(POS_MASS, columns = ["x","y","z","Da"])
                 df_Mass_POS_lst.append(df_POS_MASS)
                 file_name_lst.append(filename)
 
             if filename.lower().endswith(".rrng"):
                 path = os.path.join(self.params["input_path"], filename) 
-                ions,rrngs = self.read_rrng(path)
+                ions,rrngs = self.get_rrng(path)
+                
+            if filename.endswith(".RRNG"):
+                path = os.path.join(self.params["input_path"], filename) 
+                ions,rrngs = self.get_rrng(rrange_file)
                 
         return (df_Mass_POS_lst, file_name_lst, ions, rrngs) 
 
 
 
-    def chunkify_apt_df(self):
+    def get_big_slices(self):
         """
         Cut the data into specified portions
         
@@ -258,7 +250,7 @@ class DataPreparation:
         -----
         """
         #df_lst, files, ions, rrngs= read_apt_to_df(folder)
-        df_lst, files, ions, rrngs= self.read_apt_to_df()
+        df_lst, files, ions, rrngs= self.get_apt_dataframe()
 
         filestrings = []
         prefix = self.params['output_path']
@@ -270,11 +262,13 @@ class DataPreparation:
             for i in range(len(c)):
                 range_element = rrngs[rrngs['comp']=='{}'.format(c[i])]
                 total, count = self.atom_filter(org_file, range_element)
-                total["spec"] = [x for x in range(len(total))]
+                name = i
+                total["spec"] = [name for j in range(len(total))]
                 atoms_spec.append(total)
 
             df_atom_spec = pd.concat(atoms_spec)
-            sorted_df = df_atom_spec.sort_values(by=['z'])
+            x_wu=df_atom_spec
+            sorted_df = x_wu.sort_values(by=['z'])
 
             filestring = "file_{}_large_chunks_arr.h5".format(file.replace(".","_"))
             filestring = os.path.join(prefix, filestring)
@@ -299,7 +293,110 @@ class DataPreparation:
 
         self.chunk_files = filestrings 
 
-        
+    def get_big_slices_molecules(self):
+        df_lst, files,ions,rrngs = self.get_apt_dataframe()
+        for file_idx in range(len(files)):
+            Org_file =df_lst[file_idx]  
+
+            atoms_spec = []
+            c = np.unique(rrngs.comp.values)
+            for i in range(len(c)):
+                print(c[i])
+
+                range_element = rrngs[rrngs['comp']=='{}'.format(c[i])]
+                total, Count = atom_filter(Org_file,range_element)
+                name = c[i]
+                #name = i 
+                total["spec"] = [name for j in range(len(total))]
+                atoms_spec.append(total)
+
+            Df_atom_spec = pd.concat(atoms_spec)
+    #############################
+            #check molecules:
+            print("MOLECULE CHECK")
+            molecule_check = np.array([len(c[i].split(" ")) for i in range(len(c))])
+            molecules = c[np.argwhere(molecule_check == 2)]
+
+            Df_lst = [] 
+            for mol in molecules:
+                spec_mol = mol[0].split(" ")
+                Df = Df_atom_spec.loc[Df_atom_spec['spec'] == mol[0]].copy()
+                Df["spec"] = [spec_mol[1]]*len(Df)
+
+                Df_atom_spec.loc[Df_atom_spec['spec'] == mol[0], ['spec'] ] = spec_mol[0]
+
+                Df_lst.append(Df)
+            Df_lst.append(Df_atom_spec) 
+            Df_atom_spec = pd.concat(Df_lst)
+
+            SpecSemi = np.unique(Df_atom_spec.spec.values)
+
+            #check doubles
+            print(SpecSemi)
+            mol_doub_check = np.array([int(SpecSemi[j].split(":")[1]) for j in range(len(SpecSemi))])
+            mol_doub = SpecSemi[np.argwhere(mol_doub_check == 2)] 
+
+            Df_lst = []
+            for mol in mol_doub:
+                spec_mol = mol[0].split(":")[0]+":1"
+                Df = Df_atom_spec.loc[Df_atom_spec['spec'] == mol[0]].copy()
+                Df["spec"] = [spec_mol]*len(Df)
+
+                Df_atom_spec.loc[Df_atom_spec['spec'] == mol[0], ['spec'] ] = spec_mol
+
+                Df_lst.append(Df)
+            Df_lst.append(Df_atom_spec) 
+            Df_atom_spec = pd.concat(Df_lst)
+            SpecFinal = np.unique(Df_atom_spec.spec.values)
+
+            Df_spec_lst = []
+            for spec_ID in range(len(SpecFinal)):
+                print( SpecFinal[spec_ID])
+
+                Df = Df_atom_spec.loc[Df_atom_spec['spec'] == SpecFinal[spec_ID]].copy()
+                name = spec_ID 
+                Df["spec"] = [name for j in range(len(Df))]
+                Df_spec_lst.append(Df)
+            Df_atom_spec = pd.concat(Df_spec_lst)        
+
+
+    ############################        
+
+            x_wu=Df_atom_spec
+            sort_x = x_wu.sort_values(by=['z'])
+
+            ## open hdf5 file 
+            #hdf = pd.HDFStore("./file_{}_large_chunks.h5".format(files[file_idx].replace(".","_")))
+            
+            output_path = self.params['output_path'] + "/Output_big_slices.h5"
+            hdf = h5py.File(output_path, "w")          
+            G1 = hdf.create_group("Group_xyz_Da_spec")
+            G1.attrs["columns"] = ["x","y","z","Da","spec"]
+            G1.attrs["spec_name_order"] = list(SpecFinal)
+            ##end
+
+            sublength_x= abs((max(sort_x['z'])-min(sort_x['z']))/self.params["n_big_slices"])
+            print(sublength_x)
+            start = min(sort_x['z'])
+            end = min(sort_x['z']) +sublength_x
+            for i in tqdm(range(self.params["n_big_slices"])):
+                #temp = sort_x.iloc[start:end]
+                print(start)
+                print(end)
+                temp = sort_x[sort_x['z'].between(start, end, inclusive=True)]
+
+                #temp.to_csv('B3_Hi_ent_cubes/{}.csv'.format(i), index=False)
+                #hdf.put("chunk_{}".format(i), temp, format = "table", data_columns= True)
+                ##Put data into hdf5 file
+                G1.create_dataset("chunk_{}".format(i), data = temp.values)
+                ##end
+
+                start += sublength_x
+                end += sublength_x
+                #print(end) 
+            hdf.close() 
+            
+            
     def get_voxels(self):
         """
         
@@ -383,7 +480,7 @@ class DataPreparation:
             group = hdf_sm_r.get("0")
             
             total_voxels =list(list(group.attrs.values())[2])
-            spec_lst_len = len(list(list(group.attrs.values())[2]))
+            spec_lst_len = len(list(list(group.attrs.values())[1]))
 
             items = list(hdf_sm_r.items())
             item_lst = []
@@ -428,8 +525,9 @@ class DataPreparation:
                 f_count = f_count+1
                 
             df = pd.DataFrame.from_dict(dic_ratios)
-
-            with h5py.File(outfilename, "w") as hdfw:
+            
+            output_path = os.path.join(self.params["output_path"], outfilename)
+            with h5py.File(output_path, "w") as hdfw:
                 hdfw.create_dataset("vox_ratios", data =df.drop("file_name", axis = 1).values )
                 hdfw.attrs["what"] = ["All the Vox ratios for a given APT smaple"]
                 hdfw.attrs["howto_Group_name"] = ["Group_sm_vox_xyz_Da_spec/"]
@@ -438,7 +536,7 @@ class DataPreparation:
                 hdfw.attrs["columns"]= df_columns
             hdf_sm_r.close()
 
-        self.voxel_ratio_file = outfilename
+        self.voxel_ratio_file = output_path
 
 
     

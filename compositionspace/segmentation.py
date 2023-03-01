@@ -30,7 +30,7 @@ class CompositionClustering():
         with h5py.File(vox_file,"r") as hdf:
             group = hdf.get("Group_sm_vox_xyz_Da_spec")
             group0 = hdf.get("0")
-            spec_lst = list(list(group0.attrs.values())[2])
+            spec_lst = list(list(group0.attrs.values())[1])
 
         with h5py.File(vox_ratio_file , "r") as hdfr:
             ratios = np.array(hdfr.get("vox_ratios"))
@@ -194,7 +194,7 @@ class CompositionClustering():
         return cluster_lst, ratios
     
     def get_composition_clusters(self, vox_ratio_file, vox_file, outfile="vox_centroid_file.h5"):
-        
+        voxel_centroid_output_file = []
         n_components = self.params["n_phases"]
         ml_params = self.params["ml_models"]
         cluster_lst, ratios = self.get_composition_cluster_files(vox_ratio_file, vox_file, n_components)
@@ -226,8 +226,8 @@ class CompositionClustering():
             plot_files_cl_All_group = [file_num for file_num in range(total_voxels_int)]
             
         plot_files_group.append(plot_files_cl_All_group)
-
-        with h5py.File(outfile,"w") as hdfw:
+        output_path = os.path.join(self.params["output_path"], outfile)
+        with h5py.File(output_path,"w") as hdfw:
             for cluster_file_id in range(len(plot_files_group)):
 
                 G = hdfw.create_group(f"{cluster_file_id}")
@@ -238,7 +238,7 @@ class CompositionClustering():
                 CentroidsDic = self.get_voxel_centroid(vox_file, plot_files_group[cluster_file_id])
                 G.create_dataset(f"{cluster_file_id}", data = pd.DataFrame.from_dict(CentroidsDic).values)
 
-        self.voxel_centroid_output_file = outfile
+        self.voxel_centroid_output_file = output_path
 
     
     def generate_plots(self):
@@ -246,7 +246,7 @@ class CompositionClustering():
         vtk_files = []
         with h5py.File(self.voxel_centroid_output_file, "r") as hdfr:            
             groups =list(hdfr.keys())
-            for group in range(len(groups)-2):
+            for group in range(len(groups)-1):
                 phase_arr =  np.array(hdfr.get(f"{group}/{group}"))
                 phase_columns = list(list(hdfr.get(f"{group}").attrs.values())[0])
                 phase_cent_df =pd.DataFrame(data=phase_arr, columns=phase_columns)
@@ -254,6 +254,7 @@ class CompositionClustering():
                 image = phase_cent_df.values
                 
                 file_path = self.voxel_centroid_output_file + f"_{group}"
+               
                 vtk_files.append(file_path + ".vtu")
 
                 x = np.ascontiguousarray(image[:,0])
