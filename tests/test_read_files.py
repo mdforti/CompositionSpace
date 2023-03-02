@@ -2,14 +2,7 @@ import pytest
 import numpy as np
 import os
 import sys
-
-
-MYPREFIX='/u/gazal/Compositions_space_Feb2023/CompositionSpaceNFDI'
-CWD = os.getcwd()
-sys.path.append(MYPREFIX)
-
 from compositionspace.datautils import DataPreparation
-print(CWD)
 def test_file_rrng():
     data = DataPreparation("tests/experiment_params.yaml")
     datarrng = data.get_rrng("tests/data/R31_06365-v02.rrng")
@@ -23,7 +16,6 @@ def test_file_pos():
 def test_file_df():
     data = DataPreparation("tests/experiment_params.yaml")
     data = data.get_apt_dataframe()
-    print("hi")
     assert np.isclose(data[0][0]["x"].values[0]+5.3784895, 0)
     assert data[1][0] == 'R31_06365-v02.pos'
     assert data[2]["name"].values[0] == "C"
