@@ -14,7 +14,7 @@ pip install compositionspace
 
 ### Installation using [Conda](https://anaconda.org/)
 
-It is **strongly** recommended to install and use `calphy` within a conda environment. To see how you can install conda see [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/).
+It is **strongly** recommended to install and use `compositionspace` within a conda environment. To see how you can install conda see [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/).
 
 Once a conda distribution is available, the following steps will help set up an environment to use `compositionspace`. First step is to clone the repository.
 
@@ -40,7 +40,7 @@ then, install `compositionspace` using,
 ```
 python setup.py install
 ```
-The environment is now set up to run calphy.
+The environment is now set up to run compositionspace.
 
 ## Examples
 
