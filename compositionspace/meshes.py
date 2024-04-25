@@ -1,33 +1,24 @@
 # Import libraries
 import sys
 import os
-import pandas as pd
-import h5py
-import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.mixture import GaussianMixture
 import json 
 import h5py
 import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
 from tqdm import tqdm
-import os
+
+from sklearn.decomposition import PCA
+from sklearn.mixture import GaussianMixture
+from sklearn.cluster import DBSCAN, KMeans
+from sklearn.metrics import silhouette_score, homogeneity_score
+
 from pyevtk.hl import pointsToVTK
 from pyevtk.hl import gridToVTK#, pointsToVTKAsTIN
-from sklearn.cluster import DBSCAN
 from pyevtk.hl import pointsToVTK
 from pyevtk.hl import gridToVTK
 import trimesh
-from sklearn.decomposition import PCA
-from sklearn.metrics import silhouette_score
-from sklearn.cluster import KMeans
-from sklearn.mixture import GaussianMixture
-from sklearn.metrics import homogeneity_score
-#import plotly.graph_objects as go
-import numpy as np
-import h5py
-from sklearn.decomposition import PCA
+
 from scipy.spatial import Delaunay
 from functools import reduce
 
@@ -40,6 +31,7 @@ def centeroidnp(data_frame):
         sum_y = np.sum(data_frame['y'])
         sum_z = np.sum(data_frame['z'])
         return sum_x/length, sum_y/length, sum_z/length
+
 def centeroid_df(data_frame):
     length = len(data_frame['x'])
     sum_x = np.sum(data_frame['x'])

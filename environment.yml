@@ -1,4 +1,4 @@
-name: compspace
+name: iuc09
 channels:
   - conda-forge
 dependencies:
@@ -17,3 +17,4 @@ dependencies:
   - pyvista
   - ipywidgets
   - panel
+  - trimesh
