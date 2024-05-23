@@ -29,7 +29,7 @@ setup(
     ],
     description="APT analysis tools",
     install_requires = ['numpy', 'matplotlib', 'pandas', 'h5py', 'scikit-learn',
-    'tqdm', 'pyevtk', 'pyyaml', 'pyvista'],
+    'tqdm', 'pyevtk', 'pyyaml', 'pyvista', 'trimesh'],
     #license="GNU General Public License v3",
     long_description=readme,
     long_description_content_type='text/markdown',
