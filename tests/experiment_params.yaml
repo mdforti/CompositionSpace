@@ -1,4 +1,4 @@
-input_path: tests/data
+input_path: data
 output_path: output
 n_big_slices: 10
 voxel_size: 2
